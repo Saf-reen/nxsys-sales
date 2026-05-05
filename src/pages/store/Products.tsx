@@ -1,0 +1,797 @@
+import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Home, ChevronRight, LayoutGrid, List, Search, SlidersHorizontal, X, ArrowRight } from 'lucide-react';
+import Breadcrumbs from '@/components/common/Breadcrumbs';
+import ProductGrid from '@/components/product/ProductGrid';
+import FilterSidebar from '@/components/filters/FilterSidebar';
+import Pagination from '@/components/filters/Pagination';
+import ProductDetails from './ProductDetails';
+import { useProducts } from '@/hooks/useProducts';
+import { getBrandName, getCategoryName, getSubcategoryName, searchApi } from '@/services';
+import { DEFAULT_FILTERS, slugify, normalizeSpecificationKey } from '@/utils';
+
+const PRODUCTS_PER_PAGE = 12;
+const DETAIL_ALIAS_PATTERN = /^\d+$/;
+
+const FILTER_SECTIONS = [
+  { key: 'display', label: 'Display', optionKey: 'displayValue', emptyLabel: 'No display values available.' },
+  { key: 'categories', label: 'Category', optionKey: 'categoryLabel', idKey: 'categoryId', emptyLabel: 'No categories available.' },
+  { key: 'subcategories', label: 'Subcategory', optionKey: 'subcategoryLabel', idKey: 'subcategoryId', emptyLabel: 'No subcategories available.' },
+  { key: 'modelName', label: 'Model Name', optionKey: 'modelNameValue', emptyLabel: 'No model names available.' },
+  { key: 'brands', label: 'Brands', optionKey: 'brandValue', emptyLabel: 'No brands available.' },
+  { key: 'colour', label: 'Colour', optionKey: 'colourValue', emptyLabel: 'No colour values available.' },
+  { key: 'operatingSystem', label: 'Operating System', optionKey: 'operatingSystemValue', emptyLabel: 'No operating systems available.' },
+];
+
+const toDisplayValue = (value: any) => String(value || '').trim();
+
+const getSpecificationValue = (product: any, keys: string[] = []) => {
+  const specifications = product?.specifications || [];
+  const normalizedKeys = keys.map((key) => normalizeSpecificationKey(key));
+
+  if (Array.isArray(specifications)) {
+    for (const section of specifications) {
+      for (const item of (section.items || [])) {
+        if (normalizedKeys.includes(normalizeSpecificationKey(item.key))) {
+          return String(item.value).trim();
+        }
+      }
+    }
+  }
+
+  return '';
+};
+
+const matchesSelectedValues = (selectedValues: any[] = [], entryValue: string = '') =>
+  !selectedValues.length || (entryValue && selectedValues.includes(entryValue));
+
+const normalizeFacetOptions = (source: any) => {
+  if (!source) return [];
+
+  if (Array.isArray(source)) {
+    return source.map((item: any) => {
+      if (typeof item === 'string' || typeof item === 'number') {
+        return { value: String(item), label: String(item), count: 0 };
+      }
+      const value = item.value ?? item.id ?? item.key ?? item.name ?? item.label;
+      const label = item.label ?? item.name ?? item.key ?? item.value ?? value;
+      return value ? { value: String(value), label: String(label), count: Number(item.count ?? item.doc_count ?? 0) } : null;
+    }).filter(Boolean);
+  }
+
+  if (typeof source === 'object') {
+    return Object.entries(source).map(([value, count]: [string, any]) => ({
+      value: String(value),
+      label: String(value),
+      count: Number(count?.count ?? count?.doc_count ?? count ?? 0),
+    }));
+  }
+
+  return [];
+};
+
+const getFacetSource = (facets: any = {}, section: any) => {
+  const source = facets.facets || facets;
+  return source?.[section.key] ?? source?.[section.optionKey] ?? source?.[section.label] ?? source?.[section.label?.toLowerCase?.()] ?? null;
+};
+
+function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
+  const { category: urlCategory, subcategory: urlSubcategory } = useParams();
+  const navigate = useNavigate();
+  const { products = [], categories = [], subcategories = [], subcategoriesByCategory = {}, brands = [], loading = false, error = null } = useProducts() ?? {};
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const querySearch = searchParams.get('search') || '';
+  const searchCategory = searchParams.get('category') || '';
+  const searchSubcategory = searchParams.get('subcategory') || '';
+  const requestedCategory = predefinedCategory || urlCategory || searchCategory || '';
+  const requestedSubcategory = urlSubcategory || searchSubcategory || '';
+
+  const findCategory = useCallback((value) => {
+    if (!value || value === 'All') {
+      return null;
+    }
+
+    return (
+      categories.find((category) => {
+        const categoryName = category?.name || '';
+        return (
+          String(category?.id) === String(value) ||
+          categoryName.toLowerCase() === String(value).toLowerCase() ||
+          slugify(categoryName) === slugify(value)
+        );
+      }) || null
+    );
+  }, [categories]);
+
+  const findSubcategory = useCallback((value, source = subcategories) => {
+    if (!value || value === 'All') {
+      return null;
+    }
+
+    return (
+      source.find((subcategory) => {
+        const subcategoryName = subcategory?.name || '';
+        return (
+          String(subcategory?.id) === String(value) ||
+          subcategoryName.toLowerCase() === String(value).toLowerCase() ||
+          slugify(subcategoryName) === slugify(value)
+        );
+      }) || null
+    );
+  }, [subcategories]);
+
+  const resolvedCategory = useMemo(() => findCategory(requestedCategory), [requestedCategory, findCategory]);
+
+  const categoryScopedSubcategories = useMemo(
+    () => (resolvedCategory ? subcategoriesByCategory[String(resolvedCategory.id)] || [] : subcategories),
+    [resolvedCategory, subcategoriesByCategory, subcategories],
+  );
+
+  const resolvedSubcategory = useMemo(
+    () => findSubcategory(requestedSubcategory, categoryScopedSubcategories) || findSubcategory(requestedSubcategory, subcategories),
+    [requestedSubcategory, categoryScopedSubcategories, subcategories, findSubcategory],
+  );
+
+  const routeCategoryId = resolvedCategory?.id ? String(resolvedCategory.id) : null;
+  const routeSubcategoryId = resolvedSubcategory?.id ? String(resolvedSubcategory.id) : null;
+
+  const searchBrand = searchParams.get('brand');
+
+  const [filters, setFilters] = useState<Record<string, any>>({
+    ...DEFAULT_FILTERS,
+    categories: routeCategoryId ? [routeCategoryId] : [],
+    subcategories: routeSubcategoryId ? [routeSubcategoryId] : [],
+    brands: searchBrand ? [searchBrand] : [],
+    featuredOnly: searchParams.get('featured') === '1',
+  });
+  const [sortBy, setSortBy] = useState('relevance');
+  const [viewMode, setViewMode] = useState('grid');
+  const [searchTerm, setSearchTerm] = useState(querySearch);
+  const debouncedSearch = useDeferredValue(searchTerm);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [serverSearchProducts, setServerSearchProducts] = useState<any>(null);
+  const [serverFacets, setServerFacets] = useState<Record<string, any>>({});
+  const [serverSearchLoading, setServerSearchLoading] = useState(false);
+
+  useEffect(() => {
+    setFilters((current) => ({
+      ...current,
+      categories: routeCategoryId ? [routeCategoryId] : [],
+      subcategories: routeSubcategoryId ? [routeSubcategoryId] : [],
+      brands: searchBrand ? [searchBrand] : [],
+    }));
+  }, [routeCategoryId, routeSubcategoryId, searchBrand]);
+
+  useEffect(() => {
+    setSearchTerm(querySearch);
+  }, [querySearch]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, debouncedSearch, sortBy]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const query = debouncedSearch.trim();
+
+    if (query.length < 2) {
+      setServerSearchProducts(null);
+      setServerFacets({});
+      setServerSearchLoading(false);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setServerSearchLoading(true);
+
+    Promise.all([
+      searchApi.searchProducts({ q: query, search: query }, { categories, subcategories, brands }),
+      searchApi.getSearchFacets({ q: query, search: query }),
+    ])
+      .then(([searchProducts, facets]: [any, any]) => {
+        if (!isMounted) return;
+        setServerSearchProducts(Array.isArray(searchProducts) ? searchProducts : []);
+        setServerFacets(facets || {});
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setServerSearchProducts(null);
+        setServerFacets({});
+      })
+      .finally(() => {
+        if (isMounted) {
+          setServerSearchLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [brands, categories, debouncedSearch, subcategories]);
+
+  const activeProducts = Array.isArray(serverSearchProducts) ? serverSearchProducts : products;
+
+  const catalogEntries = useMemo(
+    () =>
+      activeProducts.map((product: any) => {
+        const categoryLabel = getCategoryName(product.category) || 'Uncategorized';
+        const subcategoryLabel = getSubcategoryName(product.subcategoryData ?? product.subcategory) || '';
+        const categoryId = String(product.categoryId ?? product.category?.id ?? product.category ?? '');
+        const subcategoryId = String(product.subcategoryId ?? product.subcategoryData?.id ?? product.subcategory?.id ?? '');
+        const displayValue =
+          getSpecificationValue(product, ['display_size', 'display', 'screen_size']) || '';
+        const modelNameValue =
+          getSpecificationValue(product, ['model_name', 'model_number']) || '';
+        const colourValue =
+          getSpecificationValue(product, ['colour', 'color']) || '';
+        const operatingSystemValue =
+          getSpecificationValue(product, ['operating_system', 'os']) || '';
+          
+        const brandValue = toDisplayValue(product.brandName || getBrandName(product.brand, brands));
+        const name = toDisplayValue(product.name);
+        const mpn = toDisplayValue(product.mpn) || 'N/A';
+        const sku = toDisplayValue(product.sku) || 'N/A';
+
+        const specificationsText = (product.specifications || [])
+          .flatMap((group: any) => [
+            group.category,
+            ...(group.items || []).flatMap((item: any) => [item.key, item.value]),
+          ])
+          .filter(Boolean)
+          .join(' ');
+
+        return {
+          id: String(product.id),
+          product,
+          detailPath: `/products/${product.id}`,
+          name,
+          mpn,
+          sku,
+          categoryId,
+          categoryLabel,
+          subcategoryId,
+          subcategoryLabel,
+          displayValue,
+          modelNameValue,
+          brandValue,
+          colourValue,
+          operatingSystemValue,
+          searchText: `${name} ${mpn} ${sku} ${specificationsText}`.toLowerCase(),
+        } as Record<string, any>;
+      }),
+    [activeProducts, categories, subcategories, brands],
+  );
+
+  const selectedCategoryIds = filters.categories;
+  const categoryNameById = useMemo(
+    () => new Map(categories.map((category) => [String(category.id), category.name])),
+    [categories],
+  );
+  const subcategoryNameById = useMemo(
+    () => new Map(subcategories.map((subcategory) => [String(subcategory.id), subcategory.name])),
+    [subcategories],
+  );
+
+  const availableSubcategories = useMemo(() => {
+    if (!selectedCategoryIds.length) {
+      return subcategories;
+    }
+
+    const lookup = new Map();
+    selectedCategoryIds.forEach((categoryId: any) => {
+      (subcategoriesByCategory[String(categoryId)] || []).forEach((subcategory) => {
+        lookup.set(String(subcategory.id), subcategory);
+      });
+    });
+
+    return Array.from(lookup.values());
+  }, [selectedCategoryIds, subcategories, subcategoriesByCategory]);
+
+  useEffect(() => {
+    if (!filters.subcategories.length) {
+      return;
+    }
+
+    const availableIds = new Set(availableSubcategories.map((subcategory) => String(subcategory.id)));
+    const nextSubcategories = filters.subcategories.filter((subcategoryId: any) => availableIds.has(String(subcategoryId)));
+
+    if (nextSubcategories.length !== filters.subcategories.length) {
+      setFilters((current) => ({
+        ...current,
+        subcategories: nextSubcategories,
+      }));
+    }
+  }, [availableSubcategories, filters.subcategories]);
+
+  const matchesEntry = (entry: any, activeFilters: any, searchValue: string, ignoreKey: string | null = null) => {
+    const normalizedSearch = searchValue.trim().toLowerCase();
+
+    if (normalizedSearch && !entry.searchText.includes(normalizedSearch)) {
+      return false;
+    }
+
+    if (ignoreKey !== 'categories' && !matchesSelectedValues(activeFilters.categories, entry.categoryId)) {
+      return false;
+    }
+
+    if (ignoreKey !== 'subcategories' && !matchesSelectedValues(activeFilters.subcategories, entry.subcategoryId)) {
+      return false;
+    }
+
+    if (ignoreKey !== 'display' && !matchesSelectedValues(activeFilters.display, entry.displayValue)) {
+      return false;
+    }
+
+    if (ignoreKey !== 'modelName' && !matchesSelectedValues(activeFilters.modelName, entry.modelNameValue)) {
+      return false;
+    }
+
+    if (ignoreKey !== 'brands' && !matchesSelectedValues(activeFilters.brands, entry.brandValue)) {
+      return false;
+    }
+
+    if (ignoreKey !== 'colour' && !matchesSelectedValues(activeFilters.colour, entry.colourValue)) {
+      return false;
+    }
+
+    if (ignoreKey !== 'operatingSystem' && !matchesSelectedValues(activeFilters.operatingSystem, entry.operatingSystemValue)) {
+      return false;
+    }
+
+    if (ignoreKey !== 'featuredOnly' && activeFilters.featuredOnly && !entry.product.featured) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const filterSections = useMemo(
+    () =>
+      FILTER_SECTIONS.map((section) => {
+        const scopedEntries = catalogEntries.filter((entry) => matchesEntry(entry, filters, debouncedSearch, section.key));
+        const counts = new Map();
+
+        scopedEntries.forEach((entry) => {
+          const optionValue = section.idKey ? entry[section.idKey] : entry[section.optionKey];
+          const optionLabel = entry[section.optionKey];
+
+          if (!optionValue || !optionLabel) {
+            return;
+          }
+
+          const current = counts.get(String(optionValue)) || {
+            value: String(optionValue),
+            label: optionLabel,
+            count: 0,
+          };
+
+          counts.set(String(optionValue), {
+            ...current,
+            count: current.count + 1,
+          });
+        });
+
+        const selectedValues = filters[section.key] || [];
+        selectedValues.forEach((selectedValue: any) => {
+          const valueKey = String(selectedValue);
+
+          if (counts.has(valueKey)) {
+            return;
+          }
+
+          let label = valueKey;
+
+          if (section.key === 'categories') {
+            label = categoryNameById.get(valueKey) || valueKey;
+          } else if (section.key === 'subcategories') {
+            label = subcategoryNameById.get(valueKey) || valueKey;
+          } else {
+            const matchingEntry = catalogEntries.find((entry) => {
+              const optionValue = section.idKey ? entry[section.idKey] : entry[section.optionKey];
+              return String(optionValue) === valueKey;
+            });
+
+            label = matchingEntry?.[section.optionKey] || valueKey;
+          }
+
+          counts.set(valueKey, {
+            value: valueKey,
+            label,
+            count: 0,
+          });
+        });
+
+        normalizeFacetOptions(getFacetSource(serverFacets, section)).forEach((facetOption: any) => {
+          if (facetOption && !counts.has(String(facetOption.value))) {
+            counts.set(String(facetOption.value), facetOption);
+          }
+        });
+
+        return {
+          ...section,
+          options: Array.from(counts.values()).sort((first, second) => first.label.localeCompare(second.label)),
+        };
+      }),
+    [catalogEntries, filters, debouncedSearch, categoryNameById, subcategoryNameById, serverFacets],
+  );
+
+  const filteredEntries = useMemo(() => {
+    const visibleEntries = catalogEntries.filter((entry) => matchesEntry(entry, filters, debouncedSearch));
+
+    return [...visibleEntries].sort((first, second) => {
+      if (sortBy === 'name-asc') {
+        return first.name.localeCompare(second.name);
+      }
+
+      if (sortBy === 'name-desc') {
+        return second.name.localeCompare(first.name);
+      }
+
+      return 0;
+    });
+  }, [catalogEntries, filters, debouncedSearch, sortBy]);
+
+  const totalPages = Math.ceil(filteredEntries.length / PRODUCTS_PER_PAGE);
+  const paginatedProducts = filteredEntries
+    .slice((currentPage - 1) * PRODUCTS_PER_PAGE, currentPage * PRODUCTS_PER_PAGE)
+    .map((entry) => entry.product);
+
+  const selectedCategoryLabels = useMemo(() => {
+    const map = new Map(categories.map((category) => [String(category.id), category.name]));
+    return filters.categories.map((categoryId: any) => ({
+      key: 'categories',
+      value: categoryId,
+      label: map.get(String(categoryId)) || String(categoryId),
+      groupLabel: 'Category',
+    }));
+  }, [filters.categories, categories]);
+
+  const selectedSubcategoryLabels = useMemo(() => {
+    const map = new Map(subcategories.map((subcategory) => [String(subcategory.id), subcategory.name]));
+    return filters.subcategories.map((subcategoryId: any) => ({
+      key: 'subcategories',
+      value: subcategoryId,
+      label: map.get(String(subcategoryId)) || String(subcategoryId),
+      groupLabel: 'Subcategory',
+    }));
+  }, [filters.subcategories, subcategories]);
+
+  const activeFilterChips = useMemo(() => {
+    const chips = [...selectedCategoryLabels, ...selectedSubcategoryLabels];
+
+    filterSections.forEach((section) => {
+      if (section.key === 'categories' || section.key === 'subcategories') {
+        return;
+      }
+
+      const selectedValues = filters[section.key] || [];
+      selectedValues.forEach((selectedValue: any) => {
+        const matchingOption = section.options.find((option) => String(option.value) === String(selectedValue));
+
+        chips.push({
+          key: section.key,
+          value: selectedValue,
+          label: matchingOption?.label || String(selectedValue),
+          groupLabel: section.label,
+        });
+      });
+    });
+
+    if (filters.featuredOnly) {
+      chips.push({
+        key: 'featuredOnly',
+        value: 'featuredOnly',
+        label: 'Stocked Units',
+        groupLabel: 'Availability',
+      });
+    }
+
+    return chips;
+  }, [filters, filterSections, selectedCategoryLabels, selectedSubcategoryLabels]);
+
+  const handleToggleFilter = (key: any, value: any) => {
+    setFilters((current: any) => {
+      if (key === 'featuredOnly') {
+        return {
+          ...current,
+          featuredOnly: !current.featuredOnly,
+        };
+      }
+
+      const currentValues = Array.isArray(current[key]) ? current[key] : [];
+      const nextValues = currentValues.includes(value)
+        ? currentValues.filter((item) => item !== value)
+        : [...currentValues, value];
+
+      if (key === 'categories') {
+        if (!nextValues.length) {
+          return {
+            ...current,
+            categories: [],
+            subcategories: [],
+          };
+        }
+
+        const validSubcategoryIds = new Set(
+          nextValues.flatMap((categoryId) =>
+            (subcategoriesByCategory[String(categoryId)] || []).map((subcategory) => String(subcategory.id)),
+          ),
+        );
+
+        return {
+          ...current,
+          categories: nextValues,
+          subcategories: current.subcategories.filter((subcategoryId: any) => validSubcategoryIds.has(String(subcategoryId))),
+        };
+      }
+
+      return {
+        ...current,
+        [key]: nextValues,
+      };
+    });
+  };
+
+  const handleRemoveFilter = (key: any, value: any) => {
+    if (key === 'featuredOnly') {
+      setFilters((current: any) => ({
+        ...current,
+        featuredOnly: false,
+      }));
+      return;
+    }
+
+    setFilters((current: any) => ({
+      ...current,
+      [key]: (current[key] || []).filter((item: any) => String(item) !== String(value)),
+    }));
+  };
+
+  const resetFilters = () => {
+    setFilters(DEFAULT_FILTERS);
+    setSearchTerm('');
+    setSearchParams({});
+
+    if (urlCategory || urlSubcategory || predefinedCategory) {
+      navigate('/products');
+    }
+  };
+
+  const activeCategoryLabel =
+    filters.categories.length === 1
+      ? categories.find((category) => String(category.id) === String(filters.categories[0]))?.name || ''
+      : '';
+
+  const activeSubcategoryLabel =
+    filters.subcategories.length === 1
+      ? subcategories.find((subcategory) => String(subcategory.id) === String(filters.subcategories[0]))?.name || ''
+      : '';
+  const hasCategoryScopedResults = Boolean(filters.categories.length || filters.subcategories.length);
+
+  const breadcrumbItems = [
+    { label: 'Products', path: '/products', active: !activeCategoryLabel && !activeSubcategoryLabel },
+    ...(activeCategoryLabel ? [{ label: activeCategoryLabel, path: `/products/${slugify(activeCategoryLabel)}`, active: !activeSubcategoryLabel }] : []),
+    ...(activeSubcategoryLabel ? [{ label: activeSubcategoryLabel, active: true }] : []),
+  ];
+
+  return (
+    <div className="min-h-screen bg-slate-50/30">
+      <Breadcrumbs items={breadcrumbItems} />
+      
+      <div className="container-shell pb-8 pt-8 sm:pb-16 lg:pb-20">
+
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+        {showMobileFilters ? (
+          <button
+            type="button"
+            className="fixed inset-0 z-[39] bg-black/45 backdrop-blur-[1px] lg:hidden"
+            onClick={() => setShowMobileFilters(false)}
+            aria-label="Close filters"
+          />
+        ) : null}
+
+        <div
+          className={`fixed inset-y-0 left-0 z-[40] w-[min(88vw,340px)] bg-white transition-transform duration-300 lg:sticky lg:top-6 lg:z-auto lg:w-[280px] lg:self-start lg:bg-transparent xl:w-[300px] ${showMobileFilters ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+            }`}
+        >
+          <div className="flex h-full flex-col">
+            <div className="flex items-center justify-between border-b border-black/10 bg-primary px-5 py-4 lg:hidden">
+              <span className="text-[13px] font-black uppercase tracking-widest text-textMain">Filters</span>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilters(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-xl bg-black/10 text-textMain transition-colors hover:bg-black/20"
+                aria-label="Close filters"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="h-full overflow-y-auto p-6 lg:p-0">
+              <FilterSidebar
+                sections={filterSections as any}
+                filters={filters}
+                totalResults={filteredEntries.length}
+                onToggleOption={handleToggleFilter}
+                onReset={resetFilters}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="mb-6 border-b border-slate-200 pb-6 sm:mb-8 sm:pb-8">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold text-slate-400">{filteredEntries.length} result{filteredEntries.length !== 1 ? 's' : ''}</p>
+                <h1 className="mt-1.5 text-2xl font-black tracking-tight text-textMain sm:mt-2 sm:text-3xl md:text-4xl">
+                  {activeSubcategoryLabel || activeCategoryLabel || 'Global Catalog'}
+                </h1>
+              </div>
+
+              <div className="flex flex-col gap-4 lg:shrink-0 lg:items-end">
+                <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
+                  {/* Search */}
+                  <div className="relative w-full sm:max-w-[320px] sm:flex-1 lg:w-[280px] lg:flex-none xl:w-[320px]">
+                    <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search by name, SKU, or specs…"
+                      value={searchTerm}
+                      onChange={(event) => {
+                        startTransition(() => {
+                          setSearchTerm(event.target.value);
+                        });
+                      }}
+                      className="w-full rounded-full border-2 border-slate-200 bg-slate-50/80 py-2.5 pl-10 pr-4 text-[13px] font-medium text-textMain outline-none transition-all focus:border-primary focus:bg-white sm:py-3"
+                    />
+                  </div>
+
+                  {/* Mobile filters button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileFilters(true)}
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border-2 border-slate-200 bg-white px-4 text-[11px] font-black uppercase tracking-[0.14em] text-textMain transition-colors hover:border-primary lg:hidden"
+                  >
+                    <SlidersHorizontal size={14} />
+                    Filters
+                  </button>
+
+                  {/* Sort */}
+                  <div className="flex min-h-[44px] items-center gap-2 rounded-full border-2 border-slate-200 bg-white px-4">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sort</span>
+                    <select
+                      value={sortBy}
+                      onChange={(event) => setSortBy(event.target.value)}
+                      className="bg-transparent py-2 text-[11px] font-black uppercase tracking-[0.12em] text-textMain outline-none"
+                    >
+                      <option value="relevance">Relevance</option>
+                      <option value="name-asc">Name A-Z</option>
+                      <option value="name-desc">Name Z-A</option>
+                    </select>
+                  </div>
+
+                  {/* View toggle */}
+                  <div className="flex overflow-hidden rounded-full border-2 border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('grid')}
+                      className={`inline-flex min-h-[44px] items-center justify-center gap-1.5 px-4 text-[11px] font-black uppercase tracking-[0.12em] transition-colors ${
+                        viewMode === 'grid' ? 'bg-primary text-textMain' : 'bg-white text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      <LayoutGrid size={14} />
+                      Grid
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('list')}
+                      className={`inline-flex min-h-[44px] items-center justify-center gap-1.5 border-l-2 border-slate-200 px-4 text-[11px] font-black uppercase tracking-[0.12em] transition-colors ${
+                        viewMode === 'list' ? 'bg-primary text-textMain' : 'bg-white text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      <List size={14} />
+                      List
+                    </button>
+                  </div>
+                </div>
+
+                {/* Active filter chips */}
+                {activeFilterChips.length ? (
+                  <div className="w-full lg:max-w-4xl">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <span className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Active:</span>
+                      <button
+                        type="button"
+                        onClick={resetFilters}
+                        className="text-[11px] font-bold text-primary transition-colors hover:opacity-80"
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {activeFilterChips.map((chip) => (
+                        <button
+                          key={`${chip.key}-${chip.value}`}
+                          type="button"
+                          onClick={() => handleRemoveFilter(chip.key, chip.value)}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition-colors hover:border-primary hover:text-textMain"
+                        >
+                          <span>{chip.label}</span>
+                          <X size={11} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="min-h-[420px]">
+            {loading || serverSearchLoading ? (
+              <div className="flex flex-col items-center justify-center gap-4 py-24">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-primary" />
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+                  {serverSearchLoading ? 'Searching Catalog…' : 'Refreshing Catalog…'}
+                </span>
+              </div>
+            ) : error ? (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-12 text-center">
+                <p className="text-lg font-black tracking-tight text-rose-700">Unable to load catalog</p>
+                <p className="mx-auto mt-3 max-w-xl text-[13px] text-rose-600">{error}</p>
+              </div>
+            ) : filteredEntries.length ? (
+              <div className="space-y-8 sm:space-y-10">
+                <ProductGrid products={paginatedProducts} viewMode={viewMode as any} />
+                {totalPages > 1 ? (
+                  <div className="border-t border-slate-200 pt-8 sm:pt-10">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={setCurrentPage}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center rounded-3xl border-2 border-dashed border-slate-200 bg-white py-24 text-center">
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
+                  <Search size={22} className="text-slate-300" />
+                </div>
+                <p className="text-[17px] font-black tracking-tight text-slate-600">
+                  {products.length
+                    ? (hasCategoryScopedResults ? 'No products in this category' : 'No products found')
+                    : 'No products available'}
+                </p>
+                <p className="mt-2 text-[13px] text-slate-400">Try adjusting your filters or search terms.</p>
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-8 py-3 text-[11px] font-black uppercase tracking-widest text-textMain transition-all hover:opacity-90 hover:shadow-[0_4px_16px_rgba(251,198,29,0.3)]"
+                >
+                  Clear All Filters
+                </button>
+              </div>
+            )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Products(props: any) {
+  const { category, subcategory } = useParams();
+
+  if (!subcategory && DETAIL_ALIAS_PATTERN.test(category || '')) {
+    return <ProductDetails productIdOverride={category} />;
+  }
+
+  return <ProductsPage {...props} />;
+}
+
+export default Products;

@@ -52,7 +52,7 @@ const getBaseUrl = () => {
 
 const commonConfig = {
   baseURL: getBaseUrl(),
-  timeout: 30000,
+  timeout: 60000,
   headers: { 'Content-Type': 'application/json' },
   // Custom serializer to remove the "[]" from array parameters (e.g., categories=1&categories=2)
   paramsSerializer: (params: any) => {
@@ -124,7 +124,7 @@ export const getApiErrorMessage = (error: any, fallback = 'Request failed') => {
   const data = error?.response?.data || error?.data;
   if (!data) return error?.message || fallback;
   if (typeof data === 'string') return data.trim() || fallback;
-  
+
   // DRF often returns { "field_name": ["error message"] } or { "detail": "error message" }
   // We scan for common keys or return the first string value we find
   if (typeof data === 'object') {
@@ -337,7 +337,7 @@ export const authService = {
   logout: async (redirect?: string) => {
     const refresh = authSessionStorage.getRefreshToken();
     if (refresh) {
-      await authApi.logout({ refresh_token: refresh }).catch(() => {});
+      await authApi.logout({ refresh_token: refresh }).catch(() => { });
     }
     authSessionStorage.clearSession();
     if (typeof window !== 'undefined') {
@@ -391,12 +391,12 @@ export const catalogApi = {
       subcategories: subcategoriesByCategory[String(cat.id)] || []
     }));
 
-    return { 
+    return {
       categories: allCategories, // Full flat list for the admin dashboard
-      brands, 
+      brands,
       subcategoriesByCategory,
       productFlags: PRODUCT_FLAGS,
-      categoryTree 
+      categoryTree
     };
   },
   getProducts: (params: any = {}, cat: any = {}) => publicApi.get('/products/products/', { params: cleanSearchParams(params) }).then(res => normalizeProducts(res, cat)),
@@ -408,18 +408,29 @@ export const catalogApi = {
   }),
   getSimilarProducts: (id: any, cat: any = {}) => publicApi.get(`/products/products/${id}/similar/`).then(res => normalizeProducts(res, cat)),
   createProduct: (payload: any, _catalog?: any) => {
-    const hasFiles = (payload.files?.length > 0) || (payload.image instanceof File) || (payload.product_image instanceof File);
-    return api.post('/products/products/', hasFiles ? toFormData(payload) : payload, hasFiles ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}).then(unwrapResponse);
+    return api.post('/products/products/', toFormData(payload), {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(unwrapResponse);
   },
   updateProduct: (id: any, payload: any, _catalog?: any) => {
-    const hasFiles = (payload.files?.length > 0) || (payload.image instanceof File) || (payload.product_image instanceof File);
-    return api.put(`/products/products/${id}/`, hasFiles ? toFormData(payload) : payload, hasFiles ? { headers: { 'Content-Type': 'multipart/form-data' } } : {}).then(unwrapResponse);
+    return api.put(`/products/products/${id}/`, toFormData(payload), {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(unwrapResponse);
   },
   deleteProduct: (id: any) => api.delete(`/products/products/${id}/`).then(unwrapResponse),
-  bulkUploadProducts: (file: File) => {
+  bulkUploadProducts: (file: File, onProgress?: (percent: number) => void) => {
     const formData = new FormData();
     formData.append('excel_file', file);
-    return api.post('/products/bulk/upload/', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(unwrapResponse);
+    return api.post('/products/products/bulk/upload/', formData, { 
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 0,
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percentCompleted);
+        }
+      }
+    }).then(unwrapResponse);
   },
   createSubcategory: (data: any) => api.post('/products/subcategories/', data).then(unwrapResponse),
   deleteSubcategory: (id: any) => api.delete(joinPath('products', 'subcategories', id)).then(unwrapResponse),

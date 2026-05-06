@@ -121,6 +121,12 @@ export interface Product {
   mpn?: string;
   sku?: string;
   isNew?: boolean;
+  is_active?: boolean;
+  subcategoryData?: Subcategory;
+  brand_name?: string;
+  category_name?: string;
+  subcategory_name?: string;
+  highlights?: string | string[];
   createdAt?: string;
   updatedAt?: string;
 }

@@ -1,17 +1,19 @@
 import { useEffect, useState, useRef } from 'react';
-import { Check, Edit2, X } from 'lucide-react';
-import { getCategoryName, getApiErrorMessage, getBrandName, resolveAssetUrl } from '@/services';
+import { Check, Edit2, X, Eye, Trash2 } from 'lucide-react';
+import { getCategoryName, getApiErrorMessage, getBrandName, resolveAssetUrl, getEntityId } from '@/services';
 import { getCatalogData } from '@/services';
 import {
   createProduct,
   getProducts,
   updateProduct,
   bulkUploadProducts,
+  deleteProduct,
 } from '@/services';
 import { showToast } from '@/utils/helpers';
 import AdminDataTable from '@/components/admin/AdminDataTable';
 import AdminPageHeader from '@/components/admin/AdminPageHeader';
 import ProductEditorModal from '@/components/admin/ProductEditorModal';
+import ProductDetailsModal from '@/components/admin/ProductDetailsModal';
 import { getTopLevelCategories } from '@/utils/adminUtils';
 
 const mergeProductIntoList = (currentProducts, nextProduct) => {
@@ -41,6 +43,9 @@ function AdminProductsPage() {
   const [productFlags, setProductFlags] = useState<any[]>([]);
   const [saveError, setSaveError] = useState<any>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [viewProduct, setViewProduct] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadCatalog = async () => {
@@ -106,6 +111,11 @@ function AdminProductsPage() {
     setEditorOpen(true);
   };
 
+  const openView = (product) => {
+    setViewProduct(product);
+    setDetailsOpen(true);
+  };
+
   const handleSave = async (payload) => {
     setSaving(true);
     try {
@@ -141,7 +151,17 @@ function AdminProductsPage() {
     if (!confirmed) return;
 
     try {
-      const updatedProduct = await updateProduct(product.id, { ...product, is_active: nextStatus }, { categories, subcategories, brands });
+      // Clean the product object to ensure relational fields are IDs, not objects
+      // This is crucial for PUT requests as the backend expects Primary Keys
+      const cleanPayload = {
+        ...product,
+        is_active: nextStatus,
+        brand: getEntityId(product.brand),
+        category: getEntityId(product.category),
+        subcategory: getEntityId(product.subcategory),
+      };
+
+      const updatedProduct = await updateProduct(product.id, cleanPayload, { categories, subcategories, brands });
       setProducts((current) => mergeProductIntoList(current, updatedProduct));
       showToast({ 
         title: `Product ${nextStatus ? 'Activated' : 'Deactivated'}`, 
@@ -151,6 +171,23 @@ function AdminProductsPage() {
       showToast({
         title: `Unable to ${action} product`,
         message: getApiErrorMessage(err, `Failed to ${action} product`),
+        type: 'error',
+      });
+    }
+  };
+
+  const handleDeleteProduct = async (product) => {
+    const confirmed = window.confirm(`Are you sure you want to permanently delete the product "${product.name}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteProduct(product.id);
+      setProducts((current) => current.filter((p) => String(p.id) !== String(product.id)));
+      showToast({ title: 'Product deleted', message: `${product.name} was removed from the catalog.` });
+    } catch (err) {
+      showToast({
+        title: 'Unable to delete product',
+        message: getApiErrorMessage(err, 'Failed to delete product'),
         type: 'error',
       });
     }
@@ -197,8 +234,11 @@ function AdminProductsPage() {
     if (!file) return;
 
     setIsImporting(true);
+    setImportProgress(0);
     try {
-      await bulkUploadProducts(file);
+      await bulkUploadProducts(file, (progress) => {
+        setImportProgress(progress);
+      });
       showToast({ title: 'Import successful', message: 'Products have been imported successfully.' });
       loadCatalog();
     } catch (err) {
@@ -209,6 +249,7 @@ function AdminProductsPage() {
       });
     } finally {
       setIsImporting(false);
+      setImportProgress(0);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -259,9 +300,21 @@ function AdminProductsPage() {
               type="button"
               disabled={isImporting}
               onClick={handleImportClick}
-              className="admin-btn-secondary max-sm:w-full !text-[11px]"
+              className="admin-btn-secondary max-sm:w-full !text-[11px] min-w-[120px] relative overflow-hidden"
             >
-              {isImporting ? 'Importing...' : 'Import Products'}
+              {isImporting && (
+                <div 
+                  className="absolute inset-0 bg-primary/10 transition-all duration-300 ease-out" 
+                  style={{ width: `${importProgress}%` }}
+                />
+              )}
+              <span className="relative z-10">
+                {isImporting 
+                  ? importProgress < 100 
+                    ? `Uploading ${importProgress}%` 
+                    : 'Processing...' 
+                  : 'Import Products'}
+              </span>
             </button>
             <button
               type="button"
@@ -307,8 +360,8 @@ function AdminProductsPage() {
         columns={[
           {
             key: 'product',
-            label: 'Product',
-            width: '32%',
+            label: 'Product Info',
+            width: '45%',
             cellClassName: 'min-w-[300px]',
             render: (product) => {
               const displayImage = product.image || product.product_image || product.images?.[0];
@@ -327,70 +380,51 @@ function AdminProductsPage() {
                       N/A
                     </div>
                   )}
-                <div className="min-w-0 pt-1">
-                  <p className="font-semibold text-slate-950 leading-relaxed">{product.name}</p>
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                    {product.brandName || getBrandName(product.brand, brands)}
-                  </p>
+                  <div className="min-w-0 pt-1">
+                    <p className="font-semibold text-slate-950 leading-relaxed truncate">{product.name}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        {product.brand_name || product.brandName || getBrandName(product.brand, brands) || 'Generic'}
+                      </span>
+                      <span className="text-[10px] text-slate-300">|</span>
+                      <span className="text-[10px] font-mono font-medium text-slate-500">{product.sku || 'No SKU'}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            );
+              );
+            },
           },
-        },
           {
             key: 'category',
-            label: 'Taxonomy',
-            width: '20%',
-            cellClassName: 'min-w-[180px]',
+            label: 'Category',
+            width: '25%',
             render: (product) => (
               <div className="min-w-0">
-                <p className="truncate text-xs font-semibold text-slate-950 uppercase tracking-wider">{getCategoryName(product.category, categories)}</p>
-                <p className="mt-1 truncate text-[10px] font-medium text-slate-400 uppercase tracking-tighter">
-                  {product.subcategory || product.subcategoryData?.name || 'Standard'}
+                <p className="truncate text-xs font-semibold text-slate-950 uppercase tracking-wider">
+                  {product.category_name || getCategoryName(product.category, categories)}
                 </p>
+                {product.subcategory_name && (
+                  <p className="mt-1 truncate text-[10px] font-medium text-slate-400 uppercase tracking-tighter">
+                    {product.subcategory_name}
+                  </p>
+                )}
               </div>
             ),
           },
           {
-            key: 'inventory',
-            label: 'Stock',
-            width: '13%',
+            key: 'status',
+            label: 'Status',
+            width: '15%',
             headerClassName: 'text-center',
             cellClassName: 'text-center',
             render: (product) => (
-              <span className="inline-flex rounded-full border border-slate-100 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-widest text-slate-600">
-                {product.stock} units
+              <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${
+                product.is_active 
+                  ? 'bg-emerald-100 text-emerald-700' 
+                  : 'bg-slate-100 text-slate-500'
+              }`}>
+                {product.is_active ? 'Active' : 'Inactive'}
               </span>
-            ),
-          },
-          {
-            key: 'flags',
-            label: 'Attributes',
-            width: '18%',
-            cellClassName: 'min-w-[160px]',
-            render: (product) => (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {product.featured && (
-                  <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-primary">
-                    Featured
-                  </span>
-                )}
-                {product.topSelling && (
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-600">
-                    Top
-                  </span>
-                )}
-                {product.isNew && (
-                  <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-primary">
-                    New
-                  </span>
-                )}
-                {!product.featured && !product.topSelling && !product.isNew && (
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">
-                    Standard
-                  </span>
-                )}
-              </div>
             ),
           },
           {
@@ -402,6 +436,14 @@ function AdminProductsPage() {
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
+                  onClick={() => openView(product)}
+                  className="p-2 text-slate-400 hover:text-emerald-600 transition-colors"
+                  title="View details"
+                >
+                  <Eye size={16} />
+                </button>
+                <button
+                  type="button"
                   onClick={() => openEdit(product)}
                   className="p-2 text-slate-400 hover:text-sky-600 transition-colors"
                   title="Edit product"
@@ -411,12 +453,24 @@ function AdminProductsPage() {
                 <button
                   type="button"
                   onClick={() => handleToggleStatus(product)}
-                  className={`p-2 transition-colors ${
-                    product.is_active ? 'text-emerald-500 hover:text-rose-500' : 'text-slate-300 hover:text-emerald-500'
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    product.is_active ? 'bg-emerald-500' : 'bg-slate-200'
                   }`}
                   title={product.is_active ? 'Deactivate product' : 'Activate product'}
                 >
-                  {product.is_active ? <Check size={16} /> : <X size={16} />}
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      product.is_active ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteProduct(product)}
+                  className="p-2 text-slate-300 hover:text-rose-600 transition-colors"
+                  title="Delete product"
+                >
+                  <Trash2 size={16} />
                 </button>
               </div>
             ),
@@ -444,6 +498,15 @@ function AdminProductsPage() {
           setSaveError(null);
         }}
         onSubmit={handleSave}
+      />
+
+      <ProductDetailsModal
+        open={detailsOpen}
+        product={viewProduct}
+        onClose={() => {
+          setDetailsOpen(false);
+          setViewProduct(null);
+        }}
       />
     </div>
   );

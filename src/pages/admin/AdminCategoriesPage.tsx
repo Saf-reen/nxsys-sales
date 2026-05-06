@@ -130,7 +130,7 @@ function AdminCategoriesPage() {
     <div className="space-y-8">
       <AdminPageHeader
         eyebrow="Taxonomy"
-        title="Categories"
+        title={`Categories (${categories.length})`}
         description="Manage top-level catalog groupings and assign each category to the correct navbar section."
         action={
           <button

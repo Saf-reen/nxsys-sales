@@ -99,7 +99,7 @@ const normalizeNestedItems = (category: any, items: any[] = []) =>
   });
 
 function CategoryNav() {
-  const { categories = [], subcategoriesByCategory = {}, brands = [] } = useCatalog() ?? {};
+  const { categoryTree = [], brands = [] } = useCatalog() ?? {};
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [expandedMobileGroup, setExpandedMobileGroup] = useState<string | null>(null);
@@ -116,45 +116,25 @@ function CategoryNav() {
   const menuTriggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const megaMenuContent = useMemo(() => {
-    const groups: Record<string, any[]> = {};
+    const content: Record<string, any[]> = {};
 
-    if (Array.isArray(categories)) {
-      const uniqueCategories: Category[] = [];
-      const seenNames = new Set();
-      categories.forEach(cat => {
-        if (!seenNames.has(cat.name)) {
-          seenNames.add(cat.name);
-          uniqueCategories.push(cat);
-        }
-      });
-
-      uniqueCategories.forEach((category) => {
-        // Use navbar_group if present, otherwise use the category name if it's a top-level category
-        const isRoot = category.parent === null || category.parent === undefined;
-        const groupName = category.navbar_group || (isRoot ? category.name : null);
-
-        if (!groupName) return;
-
-        if (!groups[groupName]) {
-          groups[groupName] = [];
-        }
-
-        const subcategories = subcategoriesByCategory[String(category.id)] || [];
-
-        groups[groupName].push({
+    if (Array.isArray(categoryTree)) {
+      categoryTree.forEach((group: any) => {
+        const groupName = group.name;
+        content[groupName] = (group.subcategories || []).map((category: any) => ({
           id: category.id,
           title: category.name,
           icon: getCategoryIcon(category.name, category.navbar_group),
           path: `/products/${slugify(category.name)}`,
-          items: normalizeNestedItems(category, subcategories),
-        });
+          items: normalizeNestedItems(category, category.subcategories || []),
+        }));
       });
     }
 
     // Populate Top Brands if brands exist
     const safeBrands = Array.isArray(brands) ? brands : [];
     if (safeBrands.length > 0) {
-      groups['Top Brands'] = [
+      content['Top Brands'] = [
         {
           id: 'top-brands-col',
           title: 'Global Brands',
@@ -170,8 +150,8 @@ function CategoryNav() {
       ];
     }
 
-    return groups;
-  }, [categories, subcategoriesByCategory, brands]);
+    return content;
+  }, [categoryTree, brands]);
 
   const menuItems = useMemo(() => {
     const dynamicGroupNames = Object.keys(megaMenuContent);

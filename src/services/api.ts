@@ -385,11 +385,28 @@ export const catalogApi = {
       }
     });
 
-    // Create a tree structure for the navbar (only items without a parent at top level)
-    const categoryTree = allCategories.filter((c: any) => !c.parent).map(cat => ({
-      ...cat,
-      subcategories: subcategoriesByCategory[String(cat.id)] || []
-    }));
+    // Create a tree structure for the navbar grouped by navbar_group
+    const groups: Record<string, any> = {};
+    allCategories.forEach(cat => {
+      if (cat.navbar_group) {
+        const groupName = cat.navbar_group;
+        if (!groups[groupName]) {
+          groups[groupName] = {
+            id: groupName,
+            name: groupName,
+            isGroup: true,
+            subcategories: []
+          };
+        }
+        groups[groupName].subcategories.push({
+          ...cat,
+          // Ensure sub-items for this category are also included if they exist
+          subcategories: subcategoriesByCategory[String(cat.id)] || []
+        });
+      }
+    });
+
+    const categoryTree = Object.values(groups);
 
     return {
       categories: allCategories, // Full flat list for the admin dashboard
@@ -414,6 +431,11 @@ export const catalogApi = {
   },
   updateProduct: (id: any, payload: any, _catalog?: any) => {
     return api.put(`/products/products/${id}/`, toFormData(payload), {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(unwrapResponse);
+  },
+  patchProduct: (id: any, payload: any) => {
+    return api.patch(`/products/products/${id}/`, toFormData(payload), {
       headers: { 'Content-Type': 'multipart/form-data' }
     }).then(unwrapResponse);
   },
@@ -526,6 +548,7 @@ export const getProducts = catalogApi.getProducts.bind(catalogApi);
 export const getProductById = catalogApi.getProductById.bind(catalogApi);
 export const createProduct = catalogApi.createProduct.bind(catalogApi);
 export const updateProduct = catalogApi.updateProduct.bind(catalogApi);
+export const patchProduct = catalogApi.patchProduct.bind(catalogApi);
 export const deleteProduct = catalogApi.deleteProduct.bind(catalogApi);
 export const getCatalogData = catalogApi.getCatalogData.bind(catalogApi);
 export const bulkUploadProducts = catalogApi.bulkUploadProducts.bind(catalogApi);

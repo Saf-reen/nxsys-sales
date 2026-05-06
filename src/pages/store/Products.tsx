@@ -580,7 +580,7 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
   return (
     <div className="min-h-screen bg-slate-50/30">
       <Breadcrumbs items={breadcrumbItems} />
-      
+
       <div className="container-shell pb-8 pt-8 sm:pb-16 lg:pb-20">
 
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">

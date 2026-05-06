@@ -6,6 +6,7 @@ import {
   createProduct,
   getProducts,
   updateProduct,
+  patchProduct,
   bulkUploadProducts,
   deleteProduct,
 } from '@/services';
@@ -151,17 +152,7 @@ function AdminProductsPage() {
     if (!confirmed) return;
 
     try {
-      // Clean the product object to ensure relational fields are IDs, not objects
-      // This is crucial for PUT requests as the backend expects Primary Keys
-      const cleanPayload = {
-        ...product,
-        is_active: nextStatus,
-        brand: getEntityId(product.brand),
-        category: getEntityId(product.category),
-        subcategory: getEntityId(product.subcategory),
-      };
-
-      const updatedProduct = await updateProduct(product.id, cleanPayload, { categories, subcategories, brands });
+      const updatedProduct = await patchProduct(product.id, { is_active: nextStatus });
       setProducts((current) => mergeProductIntoList(current, updatedProduct));
       showToast({ 
         title: `Product ${nextStatus ? 'Activated' : 'Deactivated'}`, 
@@ -271,7 +262,7 @@ function AdminProductsPage() {
     <div className="space-y-8">
       <AdminPageHeader
         eyebrow="Catalog management"
-        title="Products"
+        title={`Products (${products.length})`}
         description="Create, edit, delete, and enrich products with visuals, technical specs, inventory, and merchandising flags."
         action={
           <div className="flex flex-wrap gap-3">

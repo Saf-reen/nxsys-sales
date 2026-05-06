@@ -117,7 +117,7 @@ function AdminInventoryPage() {
     <div className="space-y-8">
       <AdminPageHeader
         eyebrow="Stock management"
-        title="Inventory Control"
+        title={`Inventory Control (${inventory.length})`}
         description="Monitor and update product availability across the catalog. Use SKU or name to find specific stock records."
       />
 

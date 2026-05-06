@@ -124,7 +124,7 @@ function AdminRFQPage() {
     <div className="space-y-8">
       <AdminPageHeader
         eyebrow="RFQ management"
-        title="Price requests"
+        title={`Price requests (${requests.length})`}
         description="Review inbound buyer requests and update their processing status directly in the table."
       />
 

@@ -18,6 +18,7 @@ export function CatalogProvider({ children }) {
   const [categories, setCategories] = useState<any[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
+  const [categoryTree, setCategoryTree] = useState<any[]>([]);
   const [subcategoriesByCategory, setSubcategoriesByCategory] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
@@ -38,6 +39,7 @@ export function CatalogProvider({ children }) {
       setCategories(allCategories);
       setSubcategories(allCategories.filter((c: any) => !!c.parent));
       setBrands(Array.isArray(catalogData.brands) ? catalogData.brands : []);
+      setCategoryTree(Array.isArray(catalogData.categoryTree) ? catalogData.categoryTree : []);
       setSubcategoriesByCategory((catalogData as any).subcategoriesByCategory || {});
 
       return catalogData;
@@ -101,6 +103,7 @@ export function CatalogProvider({ children }) {
       categories,
       subcategories,
       subcategoriesByCategory,
+      categoryTree,
       brands,
       loading,
       error,
@@ -121,7 +124,7 @@ export function CatalogProvider({ children }) {
         return result;
       },
     }),
-    [brands, categories, error, loading, refreshCatalog, subcategories, subcategoriesByCategory],
+    [brands, categories, categoryTree, error, loading, refreshCatalog, subcategories, subcategoriesByCategory],
   );
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;

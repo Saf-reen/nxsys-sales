@@ -114,7 +114,6 @@ export interface Product {
   top_selling?: boolean;
   newArrival?: boolean;
   new_arrival?: boolean;
-  highlights?: string[];
   tags?: string[];
   specification_records?: SpecificationRecord[];
   subcategoryId?: number;
@@ -182,6 +181,7 @@ export interface CatalogContextValue {
   categories: Category[];
   subcategories: Subcategory[];
   subcategoriesByCategory: Record<string, Subcategory[]>;
+  categoryTree: any[];
   brands: Brand[];
   loading: boolean;
   error: string | null;

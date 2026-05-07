@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, ChevronRight, Heart, MessageSquare, Package, Star, ShieldCheck, Truck, BadgeCheck } from 'lucide-react';
+import { ArrowRight, Heart, MessageSquare, Package, Star, ShieldCheck, Truck, BadgeCheck } from 'lucide-react';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import ProductGallery from '@/components/product/ProductGallery';
 import SpecificationsTable from '@/components/product/SpecificationsTable';
@@ -49,6 +49,7 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
   const [productError, setProductError] = useState('');
   const [activeTab, setActiveTab] = useState('specifications');
   const [similarProducts, setSimilarProducts] = useState<any[]>([]);
+  const [fbtSelected, setFbtSelected] = useState<Set<string>>(new Set());
 
   const isAuthenticated = authService.isAuthenticated();
   const wishlist = useWishlist();
@@ -96,6 +97,12 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
   }, [brands, categories, product?.id, subcategories]);
 
   useEffect(() => {
+    const pool = Array.isArray(similarProducts) && similarProducts.length ? similarProducts : (Array.isArray(products) ? products : []);
+    const ids = pool.filter(item => item && String(item.id) !== String(product?.id)).slice(0, 2).map(p => String(p.id));
+    setFbtSelected(new Set(ids));
+  }, [similarProducts, products, product?.id]);
+
+  useEffect(() => {
     if (!product) return;
     const pendingIntent = rfqIntentService.get();
     const shouldResumeIntent = isAuthenticated && pendingIntent && String(pendingIntent.productId) === String(id);
@@ -115,6 +122,15 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
       showToast({ title: 'Authentication Required', message: 'Please sign in to request pricing.' });
       navigate('/login', { state: { from: location, openRFQ: true } });
     }
+  };
+
+  const toggleFbtItem = (id: string) => {
+    setFbtSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(String(id))) next.delete(String(id));
+      else next.add(String(id));
+      return next;
+    });
   };
 
   const handleWishlistToggle = async () => {
@@ -192,6 +208,12 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
     : Array.isArray(products) ? products : [])
     .filter((item) => item && String(item.id) !== String(product?.id))
     .slice(0, 4);
+
+  const frequentlyBoughtProducts = relatedProducts.slice(0, 2);
+  const selectedFbtProducts = frequentlyBoughtProducts.filter(p => fbtSelected.has(String(p.id)));
+  const bundleItems = [product, ...selectedFbtProducts];
+  const bundleTotal = bundleItems.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
+  const hasBundlePrices = bundleItems.some(p => Number(p.price) > 0);
 
   const breadcrumbItems = [
     { label: 'Catalog', path: '/products' },
@@ -421,6 +443,123 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
           )}
         </div>
       </div>
+
+      {/* ── Frequently Bought Together ── */}
+      {frequentlyBoughtProducts.length > 0 && (
+        <div className="container-shell mt-16 lg:mt-24">
+          <h2 className="mb-5 text-xl font-black tracking-tight text-textMain sm:text-2xl">Frequently Bought Together</h2>
+
+          <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-10">
+
+              {/* Left: image row + names */}
+              <div className="flex-1 min-w-0">
+                {/* Image boxes row */}
+                <div className="flex flex-wrap items-center gap-3">
+
+                  {/* Current product image box */}
+                  <div className="relative h-[130px] w-[130px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-3">
+                    <img
+                      src={resolveAssetUrl(galleryImages[0]?.image || product.image) ?? undefined}
+                      alt={product.name}
+                      className="h-full w-full object-contain"
+                      onError={(e) => { e.currentTarget.src = placeholder; }}
+                    />
+                    {/* Always-checked checkbox */}
+                    <div className="absolute right-2 top-2 flex h-[18px] w-[18px] items-center justify-center rounded bg-primary shadow-sm">
+                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                        <path d="M1 4L3.5 6.5L9 1" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* FBT product image boxes */}
+                  {frequentlyBoughtProducts.map((item: any) => (
+                    <div key={item.id} className="flex items-center gap-3">
+                      <span className="text-2xl font-light text-slate-300">+</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleFbtItem(item.id)}
+                        className={`relative h-[130px] w-[130px] shrink-0 overflow-hidden rounded-xl border bg-gradient-to-br from-slate-50 to-white p-3 transition-all ${
+                          fbtSelected.has(String(item.id)) ? 'border-slate-200' : 'border-slate-100 opacity-50'
+                        }`}
+                      >
+                        <img
+                          src={resolveAssetUrl((item.images?.[0] as any)?.image || item.image) ?? undefined}
+                          alt={item.name}
+                          className="h-full w-full object-contain"
+                          onError={(e) => { e.currentTarget.src = placeholder; }}
+                        />
+                        <div className={`absolute right-2 top-2 flex h-[18px] w-[18px] items-center justify-center rounded border-2 transition-colors ${
+                          fbtSelected.has(String(item.id)) ? 'border-primary bg-primary' : 'border-slate-300 bg-white'
+                        }`}>
+                          {fbtSelected.has(String(item.id)) && (
+                            <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                              <path d="M1 4L3.5 6.5L9 1" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </div>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Product names & prices below, aligned under each image */}
+                <div
+                  className="mt-4 grid gap-x-5 gap-y-3"
+                  style={{ gridTemplateColumns: `repeat(${frequentlyBoughtProducts.length + 1}, 130px)` }}
+                >
+                  {/* Current product info */}
+                  <div>
+                    <p className="mb-0.5 text-[10px] font-black uppercase tracking-wide text-slate-400">This item:</p>
+                    <p className="line-clamp-3 text-[12px] font-semibold leading-snug text-slate-700">{product.name}</p>
+                    {product.price ? (
+                      <p className="mt-1.5 text-sm font-black text-textMain">{formatCurrency(product.price)}</p>
+                    ) : null}
+                  </div>
+
+                  {/* FBT product info */}
+                  {frequentlyBoughtProducts.map((item: any) => (
+                    <div key={item.id} className={!fbtSelected.has(String(item.id)) ? 'opacity-40' : ''}>
+                      <Link
+                        to={`/products/${item.id}`}
+                        className="line-clamp-3 text-[12px] font-semibold leading-snug text-slate-800 hover:underline"
+                      >
+                        {item.name}
+                      </Link>
+                      {item.price ? (
+                        <p className="mt-1.5 text-sm font-black text-textMain">{formatCurrency(item.price)}</p>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right: summary panel */}
+              <div className="shrink-0 lg:w-56">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                  {hasBundlePrices && (
+                    <p className="mb-3 text-sm text-slate-600">
+                      Total price:{' '}
+                      <span className="font-black text-textMain">{formatCurrency(bundleTotal)}</span>
+                    </p>
+                  )}
+                  <button
+                    onClick={handleRequestPrice}
+                    className="w-full rounded-xl bg-primary py-3 text-[11px] font-black uppercase tracking-wider text-textMain transition-all hover:opacity-90 hover:shadow-md"
+                  >
+                    Request Bundle Quote ({bundleItems.length})
+                  </button>
+                  <p className="mt-2.5 text-[11px] leading-relaxed text-slate-400">
+                    {bundleItems.length} item{bundleItems.length !== 1 ? 's' : ''} selected. Uncheck to remove from bundle.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Similar Products ── */}
       {relatedProducts.length > 0 && (

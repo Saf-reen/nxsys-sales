@@ -7,10 +7,8 @@ import SpecificationsTable from '@/components/product/SpecificationsTable';
 import { useProducts } from '@/hooks/useProducts';
 import RequestPriceModal from '@/components/product/RequestPriceModal';
 import placeholder from '@/assets/placeholder.jpg';
-import { getBrandName, getCategoryName, catalogApi as productService, getApiErrorMessage, resolveAssetUrl } from '@/services';
+import { getBrandName, getCategoryName, catalogApi as productService, getApiErrorMessage, resolveAssetUrl, authService, rfqIntentService } from '@/services';
 import { slugify, showToast, formatCurrency } from '@/utils';
-import { authService } from '@/services';
-import { rfqIntentService } from '@/services';
 import ProductReviews from '@/components/reviews/ProductReviews';
 import { useWishlist } from '@/hooks/useWishlist';
 
@@ -135,6 +133,17 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
 
   const handleWishlistToggle = async () => {
     if (!product?.id || !wishlist) return;
+
+    if (!isAuthenticated && !isWishlisted) {
+      showToast({
+        title: 'Authentication Required',
+        message: 'Please sign in to save items to your wishlist.',
+        type: 'info'
+      });
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+
     try {
       const wasWishlisted = wishlist.isWishlisted(product.id);
       await wishlist.toggleWishlist(product.id);

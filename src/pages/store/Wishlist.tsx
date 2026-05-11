@@ -31,7 +31,7 @@ function Wishlist() {
           <p className="mt-3 max-w-xl text-[13px] leading-6 text-slate-500">
             {isAuthenticated
               ? 'Your saved products are synced to your account.'
-              : 'Your wishlist is saved on this device. Sign in to sync it across sessions.'}
+              : 'Please sign in to save products to your wishlist and sync them across devices.'}
           </p>
         </div>
         <Link

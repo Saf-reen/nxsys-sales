@@ -54,6 +54,7 @@ const Register = () => {
       const payload = {
         email: formData.email,
         password: formData.password,
+        confirm_password: formData.confirmPassword,
         full_name: formData.fullname,
         fullname: formData.fullname, 
         phone_number: formData.phone,
@@ -78,7 +79,7 @@ const Register = () => {
         email: normalizedError.fieldErrors.email || '',
         phone: normalizedError.fieldErrors.phone_number || normalizedError.fieldErrors.phone || '',
         password: normalizedError.fieldErrors.password || '',
-        confirmPassword: normalizedError.fieldErrors.confirmPassword || '',
+        confirmPassword: normalizedError.fieldErrors.confirm_password || normalizedError.fieldErrors.confirmPassword || '',
       }));
       setFormError(normalizedError.message);
 

@@ -1,9 +1,9 @@
 import { memo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, Heart } from 'lucide-react';
 import placeholder from '../../assets/placeholder.jpg';
 import { formatCurrency, showToast } from '../../utils/helpers';
-import { getApiErrorMessage, resolveAssetUrl } from '@/services';
+import { getApiErrorMessage, resolveAssetUrl, authService } from '@/services';
 import { useWishlist } from '@/hooks/useWishlist';
 
 function ProductCard({ product, viewMode = 'grid' }) {
@@ -12,6 +12,8 @@ function ProductCard({ product, viewMode = 'grid' }) {
   const mainImage = resolveAssetUrl(product.images?.[0]?.image || product.image || placeholder) ?? '';
   const wishlist = useWishlist();
   const isWishlisted = wishlist?.isWishlisted(product.id) || false;
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleImageError = (e) => { e.currentTarget.src = placeholder; };
 
@@ -19,6 +21,17 @@ function ProductCard({ product, viewMode = 'grid' }) {
     e.preventDefault();
     e.stopPropagation();
     if (!wishlist) return;
+
+    if (!authService.isAuthenticated() && !isWishlisted) {
+      showToast({
+        title: 'Authentication Required',
+        message: 'Please sign in to save items to your wishlist.',
+        type: 'info'
+      });
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+
     try {
       const wasWishlisted = wishlist.isWishlisted(product.id);
       await wishlist.toggleWishlist(product.id);

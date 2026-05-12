@@ -251,7 +251,8 @@ export const normalizeProduct = (product: any, catalog: any = {}) => {
   if (!product) return null;
   const imagesSource = product.product_image ?? product.images ?? product.image;
   const images = Array.isArray(imagesSource) ? imagesSource.map(resolveAssetUrl).filter(Boolean) : [resolveAssetUrl(imagesSource)].filter(Boolean);
-  return {
+  
+  const normalized = {
     ...product,
     id: product.id ?? product.pk,
     name: product.name || 'Untitled product',
@@ -259,6 +260,21 @@ export const normalizeProduct = (product: any, catalog: any = {}) => {
     product_image: images[0] || null,
     images: images,
   };
+
+  // Normalize nested lists if they contain objects
+  if (Array.isArray(product.related_products)) {
+    normalized.related_products = product.related_products.map((p: any) => 
+      typeof p === 'object' ? normalizeProduct(p, catalog) : p
+    );
+  }
+  
+  if (Array.isArray(product.frequently_bought_together)) {
+    normalized.frequently_bought_together = product.frequently_bought_together.map((p: any) => 
+      typeof p === 'object' ? normalizeProduct(p, catalog) : p
+    );
+  }
+
+  return normalized;
 };
 
 export const normalizeCategories = (payload: any) => extractList(payload).map(normalizeCategory).filter(Boolean);

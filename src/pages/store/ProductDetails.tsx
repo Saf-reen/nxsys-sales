@@ -95,10 +95,13 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
   }, [brands, categories, product?.id, subcategories]);
 
   useEffect(() => {
-    const pool = Array.isArray(similarProducts) && similarProducts.length ? similarProducts : (Array.isArray(products) ? products : []);
-    const ids = pool.filter(item => item && String(item.id) !== String(product?.id)).slice(0, 2).map(p => String(p.id));
+    if (!product || !Array.isArray(product.frequently_bought_together)) return;
+    
+    const ids = product.frequently_bought_together
+      .map((p: any) => String(p.id));
+    
     setFbtSelected(new Set(ids));
-  }, [similarProducts, products, product?.id]);
+  }, [product?.id, product?.frequently_bought_together]);
 
   useEffect(() => {
     if (!product) return;
@@ -212,13 +215,19 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
     return raw.map((h: any) => String(h || '').replace(/^(?:[*-])\s*/, '').trim()).filter(Boolean);
   })();
 
-  const relatedProducts = (Array.isArray(similarProducts) && similarProducts.length
-    ? similarProducts
-    : Array.isArray(products) ? products : [])
-    .filter((item) => item && String(item.id) !== String(product?.id))
+  const relatedProducts = (
+    (Array.isArray(product?.related_products) && product.related_products.length > 0)
+      ? product.related_products
+      : (Array.isArray(similarProducts) && similarProducts.length
+        ? similarProducts
+        : Array.isArray(products) ? products : [])
+  )
+    .filter((item: any) => item && String(item.id) !== String(product?.id))
     .slice(0, 4);
 
-  const frequentlyBoughtProducts = relatedProducts.slice(0, 2);
+  const frequentlyBoughtProducts = Array.isArray(product?.frequently_bought_together) 
+    ? product.frequently_bought_together 
+    : [];
   const selectedFbtProducts = frequentlyBoughtProducts.filter(p => fbtSelected.has(String(p.id)));
   const bundleItems = [product, ...selectedFbtProducts];
   const bundleTotal = bundleItems.reduce((sum, p) => sum + (Number(p.price) || 0), 0);

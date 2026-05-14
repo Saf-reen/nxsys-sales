@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
-import { createCategory, deleteCategory, updateCategory, createBrand } from '@/services';
-import { getCatalogData } from '@/services';
-import { getApiErrorMessage } from '@/services';
+import { 
+  createCategory, 
+  deleteCategory, 
+  updateCategory, 
+  createBrand,
+  getCategoryMetadata,
+  createSubcategory,
+  updateSubcategory,
+  deleteSubcategory
+} from '@/services';
+import { getCatalogData, getApiErrorMessage, getNormalizedApiError } from '@/services';
 import { showToast } from '@/utils/helpers';
 import AdminDataTable from '@/components/admin/AdminDataTable';
 import CategoryModal from '@/components/admin/CategoryModal';
@@ -20,9 +28,12 @@ function AdminCategoriesPage() {
   const [modalConfig, setModalConfig] = useState<{ isSub?: boolean; parentId?: any }>({});
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'categories' | 'groups'>('categories');
+  const [categoryMetadata, setCategoryMetadata] = useState<any>(null);
+  const [categorySaveError, setCategorySaveError] = useState<any>(null);
 
   const openModal = (isSub = false, parentId = '', category = null) => {
     setSelectedCategory(category);
+    setCategorySaveError(null);
     setModalConfig({ isSub, parentId });
     setModalOpen(true);
   };
@@ -49,6 +60,13 @@ function AdminCategoriesPage() {
       setCategories(sorted);
       setBrands(catalogData.brands || []);
       setSubcategoriesByCategory(catalogData.subcategoriesByCategory);
+      
+      try {
+        const metadata = await getCategoryMetadata();
+        setCategoryMetadata(metadata);
+      } catch {
+        // Fallback
+      }
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load categories'));
     } finally {
@@ -60,28 +78,42 @@ function AdminCategoriesPage() {
     loadCategories();
   }, []);
 
-  const handleSave = async (payload) => {
+  const handleSave = async (payload: any) => {
     setSaving(true);
+    const isSub = !!payload.parent;
     try {
+      
       if (payload.navbar_group === 'Top Brands' && !payload.id) {
         // Automatically create a Brand as well
-        await createCategory(payload); // We still create the category for record keeping
+        await createCategory(payload); 
         const brandPayload = { name: payload.name, description: `Created via Top Brands category` };
         await createBrand(brandPayload);
         showToast({ title: 'Brand & Category created', message: `${payload.name} was added to Brands and the Navbar.` });
       } else if (payload.id) {
-        await updateCategory(payload.id, payload);
-        showToast({ title: 'Category updated', message: `${payload.name} was updated successfully.` });
+        if (isSub) {
+          await updateSubcategory(payload.parent, payload.id, payload);
+          showToast({ title: 'Subcategory updated', message: `${payload.name} was updated successfully.` });
+        } else {
+          await updateCategory(payload.id, payload);
+          showToast({ title: 'Category updated', message: `${payload.name} was updated successfully.` });
+        }
       } else {
-        await createCategory(payload);
-        showToast({ title: 'Category created', message: `${payload.name} was added successfully.` });
+        if (isSub) {
+          await createSubcategory(payload.parent, payload);
+          showToast({ title: 'Subcategory created', message: `${payload.name} was added successfully.` });
+        } else {
+          await createCategory(payload);
+          showToast({ title: 'Category created', message: `${payload.name} was added successfully.` });
+        }
       }
       setModalOpen(false);
       await loadCategories();
     } catch (err) {
+      const errorData = getNormalizedApiError(err, { fallbackMessage: 'Operation failed' });
+      setCategorySaveError(errorData);
       showToast({
-        title: `Unable to ${payload.id ? 'update' : 'create'} category`,
-        message: getApiErrorMessage(err, 'Operation failed'),
+        title: `Unable to ${payload.id ? 'update' : 'create'} ${isSub ? 'subcategory' : 'category'}`,
+        message: errorData.message,
         type: 'error',
       });
     } finally {
@@ -89,7 +121,7 @@ function AdminCategoriesPage() {
     }
   };
 
-  const handleDelete = async (category) => {
+  const handleDelete = async (category: any) => {
     const subcount = (subcategoriesByCategory[String(category.id)] || []).length;
     const warning = subcount > 0 
       ? `\n\nWarning: This category has ${subcount} linked subcategories. Deleting it may cause errors or orphans depending on the server configuration.` 
@@ -101,13 +133,17 @@ function AdminCategoriesPage() {
     }
 
     try {
-      await deleteCategory(category.id);
-      showToast({ title: 'Category deleted', message: `${category.name} was removed.` });
+      if (category.parent) {
+        await deleteSubcategory(category.parent, category.id);
+      } else {
+        await deleteCategory(category.id);
+      }
+      showToast({ title: 'Success', message: `${category.name} was removed.` });
       await loadCategories();
     } catch (err) {
       showToast({
-        title: 'Unable to delete category',
-        message: getApiErrorMessage(err, 'Category deletion failed'),
+        title: 'Unable to delete item',
+        message: getApiErrorMessage(err, 'Deletion failed'),
         type: 'error',
       });
     }
@@ -261,7 +297,7 @@ function AdminCategoriesPage() {
               ),
             },
           ]}
-          rows={categories}
+          rows={categories.filter(c => !c.parent)}
           emptyText="No categories available."
           minWidthClassName="min-w-[1000px]"
         />
@@ -342,6 +378,8 @@ function AdminCategoriesPage() {
         categories={categories}
         brands={brands}
         category={selectedCategory}
+        error={categorySaveError}
+        metadata={categoryMetadata}
         initialIsSubcategory={modalConfig.isSub}
         initialParentId={modalConfig.parentId}
       />
@@ -352,6 +390,14 @@ function AdminCategoriesPage() {
         onAddSub={(category) => {
           setDetailModalOpen(false);
           openModal(true, category.id);
+        }}
+        onEditSub={(sub) => {
+          setDetailModalOpen(false);
+          openModal(true, sub.parent, sub);
+        }}
+        onDeleteSub={(sub) => {
+          setDetailModalOpen(false);
+          handleDelete(sub);
         }}
         category={selectedCategory}
         subcategories={selectedCategory ? (subcategoriesByCategory[String(selectedCategory.id)] || []) : []}

@@ -251,7 +251,7 @@ export const normalizeProduct = (product: any, catalog: any = {}) => {
   if (!product) return null;
   const imagesSource = product.product_image ?? product.images ?? product.image;
   const images = Array.isArray(imagesSource) ? imagesSource.map(resolveAssetUrl).filter(Boolean) : [resolveAssetUrl(imagesSource)].filter(Boolean);
-  
+
   const normalized = {
     ...product,
     id: product.id ?? product.pk,
@@ -263,13 +263,13 @@ export const normalizeProduct = (product: any, catalog: any = {}) => {
 
   // Normalize nested lists if they contain objects
   if (Array.isArray(product.related_products)) {
-    normalized.related_products = product.related_products.map((p: any) => 
+    normalized.related_products = product.related_products.map((p: any) =>
       typeof p === 'object' ? normalizeProduct(p, catalog) : p
     );
   }
-  
+
   if (Array.isArray(product.frequently_bought_together)) {
-    normalized.frequently_bought_together = product.frequently_bought_together.map((p: any) => 
+    normalized.frequently_bought_together = product.frequently_bought_together.map((p: any) =>
       typeof p === 'object' ? normalizeProduct(p, catalog) : p
     );
   }
@@ -414,15 +414,25 @@ export const catalogApi = {
             subcategories: []
           };
         }
+        
+        // Find and sort children for this item
+        const children = (subcategoriesByCategory[String(cat.id)] || [])
+          .sort((a, b) => a.name.localeCompare(b.name));
+
         groups[groupName].subcategories.push({
           ...cat,
-          // Ensure sub-items for this category are also included if they exist
-          subcategories: subcategoriesByCategory[String(cat.id)] || []
+          subcategories: children
         });
       }
     });
 
-    const categoryTree = Object.values(groups);
+    // Sort items within each group alphabetically
+    Object.values(groups).forEach((group: any) => {
+      group.subcategories.sort((a: any, b: any) => a.name.localeCompare(b.name));
+    });
+
+    // Sort the top-level groups alphabetically
+    const categoryTree = Object.values(groups).sort((a, b) => a.name.localeCompare(b.name));
 
     return {
       categories: allCategories, // Full flat list for the admin dashboard
@@ -459,7 +469,7 @@ export const catalogApi = {
   bulkUploadProducts: (file: File, onProgress?: (percent: number) => void) => {
     const formData = new FormData();
     formData.append('excel_file', file);
-    return api.post('/products/products/bulk/upload/', formData, { 
+    return api.post('/products/products/bulk/upload/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 0,
       onUploadProgress: (progressEvent) => {
@@ -470,9 +480,11 @@ export const catalogApi = {
       }
     }).then(unwrapResponse);
   },
-  getProductMetadata: () => api.options('/products/products/').then(unwrapResponse),
-  createSubcategory: (data: any) => api.post('/products/subcategories/', data).then(unwrapResponse),
-  deleteSubcategory: (id: any) => api.delete(joinPath('products', 'subcategories', id)).then(unwrapResponse),
+  getProductMetadata: () => publicApi.options('/products/products/').then(unwrapResponse),
+  createSubcategory: (parentId: any, data: any) => api.post(joinPath('products', 'categories', parentId, 'subcategories'), data).then(unwrapResponse),
+  updateSubcategory: (parentId: any, subId: any, data: any) => api.put(joinPath('products', 'categories', parentId, 'subcategories', subId), data).then(unwrapResponse),
+  deleteSubcategory: (parentId: any, subId: any) => api.delete(joinPath('products', 'categories', parentId, 'subcategories', subId)).then(unwrapResponse),
+  getCategoryMetadata: () => publicApi.options('/products/categories/').then(unwrapResponse),
 };
 
 export const categoryApi = {
@@ -570,7 +582,11 @@ export const deleteProduct = catalogApi.deleteProduct.bind(catalogApi);
 export const getCatalogData = catalogApi.getCatalogData.bind(catalogApi);
 export const getProductMetadata = catalogApi.getProductMetadata.bind(catalogApi);
 export const bulkUploadProducts = catalogApi.bulkUploadProducts.bind(catalogApi);
+export const getCategoryMetadata = catalogApi.getCategoryMetadata.bind(catalogApi);
 export const createCategory = categoryApi.createCategory.bind(categoryApi);
+export const createSubcategory = catalogApi.createSubcategory.bind(catalogApi);
+export const updateSubcategory = catalogApi.updateSubcategory.bind(catalogApi);
+export const deleteSubcategory = catalogApi.deleteSubcategory.bind(catalogApi);
 export const updateCategory = categoryApi.updateCategory.bind(categoryApi);
 export const deleteCategory = categoryApi.deleteCategory.bind(categoryApi);
 export const createBrand = brandApi.createBrand.bind(brandApi);

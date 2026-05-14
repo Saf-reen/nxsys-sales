@@ -11,6 +11,8 @@ interface CategoryModalProps {
   onClose: () => void;
   onSubmit: (data: Record<string, unknown>) => void;
   submitting: boolean;
+  error?: any;
+  metadata?: any;
   categories?: Category[];
   brands?: any[];
   category?: Category | null;
@@ -25,6 +27,8 @@ function CategoryModal({
   onClose,
   onSubmit,
   submitting,
+  error,
+  metadata,
   categories = [],
   brands = [],
   category = null,
@@ -64,6 +68,51 @@ function CategoryModal({
 
   const topLevelCategories = getTopLevelCategories(categories);
 
+  const getFieldError = (fieldName: string) => {
+    if (error && typeof error === 'object' && error.fieldErrors) {
+      return error.fieldErrors[fieldName]?.[0];
+    }
+    return null;
+  };
+
+  const isRequired = (fieldName: string) => {
+    const action = category ? 'PUT' : 'POST';
+    const field = metadata?.actions?.[action]?.[fieldName] || metadata?.actions?.POST?.[fieldName];
+    return field?.required || false;
+  };
+
+  // Capture all errors that aren't mapped to specific fields
+  const getGeneralErrors = () => {
+    if (!error) return [];
+    const messages: string[] = [];
+    
+    // 1. Check for non_field_errors
+    if (Array.isArray(error.data?.non_field_errors)) {
+      messages.push(...error.data.non_field_errors);
+    }
+    
+    // 2. Check for other field errors not explicitly handled in the UI
+    const handledFields = ['name', 'parent', 'navbar_group'];
+    if (error.fieldErrors) {
+      Object.entries(error.fieldErrors).forEach(([key, errs]) => {
+        if (!handledFields.includes(key) && key !== 'non_field_errors') {
+          if (Array.isArray(errs)) {
+            errs.forEach(e => messages.push(`${key}: ${e}`));
+          }
+        }
+      });
+    }
+
+    // 3. Fallback to the top-level message if no specific field errors were found
+    if (messages.length === 0 && error.message && !error.fieldErrors) {
+      messages.push(error.message);
+    }
+
+    return [...new Set(messages)]; // Unique messages
+  };
+
+  const generalErrors = getGeneralErrors();
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!name.trim()) return;
@@ -75,10 +124,12 @@ function CategoryModal({
     if (isSubcategory) {
       if (!parentId) return;
       payload.parent = parentId;
+      payload.parent_id = parentId;
       payload.categoryId = parentId;
     } else {
       payload.navbar_group = navbarGroup.trim() || null;
       payload.parent = null;
+      payload.parent_id = null;
     }
 
     if (category?.id) {
@@ -112,6 +163,17 @@ function CategoryModal({
       }
     >
       <form id="admin-category-form" onSubmit={handleSubmit} className="space-y-6">
+        {generalErrors.length > 0 && (
+          <div className="rounded-xl bg-rose-50 border border-rose-200 p-4 space-y-1">
+            {generalErrors.map((err: string, i: number) => (
+              <p key={i} className="text-xs font-bold text-rose-600 flex items-center gap-2">
+                <span className="h-1 w-1 rounded-full bg-rose-600 shrink-0" />
+                {err}
+              </p>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-center gap-4 rounded-[20px] bg-slate-50 p-4 border border-slate-100">
           <button
             type="button"
@@ -138,14 +200,14 @@ function CategoryModal({
         {isSubcategory && (
           <div className="field-stack">
             <label className="text-sm font-semibold text-slate-700" htmlFor="admin-parent-category">
-              Parent category
+              Parent category {isRequired('parent') && <span className="text-rose-500">*</span>}
             </label>
             <select
               id="admin-parent-category"
               value={parentId}
               onChange={(event) => setParentId(event.target.value)}
-              className="admin-control"
-              required
+              className={`admin-control ${getFieldError('parent') ? 'border-rose-300 bg-rose-50/30' : ''}`}
+              required={isRequired('parent')}
             >
               <option value="">Select a category</option>
               {topLevelCategories
@@ -156,13 +218,14 @@ function CategoryModal({
                   </option>
                 ))}
             </select>
+            {getFieldError('parent') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('parent')}</p>}
           </div>
         )}
 
         {!isSubcategory && (
           <div className="field-stack">
             <label className="text-sm font-semibold text-slate-700" htmlFor="admin-navbar-group">
-              Navbar Group
+              Navbar Group {isRequired('navbar_group') && <span className="text-rose-500">*</span>}
             </label>
             <input
               id="admin-navbar-group"
@@ -171,13 +234,15 @@ function CategoryModal({
               value={navbarGroup}
               onChange={(event) => setNavbarGroup(event.target.value)}
               placeholder="Select or type to add new group..."
-              className="admin-control"
+              className={`admin-control ${getFieldError('navbar_group') ? 'border-rose-300 bg-rose-50/30' : ''}`}
+              required={isRequired('navbar_group')}
             />
             <datalist id="navbar-groups-list">
               {existingNavbarGroups.map((group) => (
                 <option key={group} value={group} />
               ))}
             </datalist>
+            {getFieldError('navbar_group') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('navbar_group')}</p>}
             <p className="text-[10px] text-slate-400 italic">
               Group multiple categories under one navbar heading. Leave blank for standalone.
             </p>
@@ -210,6 +275,7 @@ function CategoryModal({
         <div className="field-stack">
           <label className="text-sm font-semibold text-slate-700" htmlFor="admin-category-name">
             {isSubcategory ? 'Subcategory name' : navbarGroup === 'Top Brands' ? 'Brand name' : 'Category name'}
+            {isRequired('name') && <span className="text-rose-500">*</span>}
           </label>
           <input
             id="admin-category-name"
@@ -217,9 +283,10 @@ function CategoryModal({
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder={isSubcategory ? 'Example: Workstations' : navbarGroup === 'Top Brands' ? 'Example: Apple' : 'Example: Enterprise'}
-            className="admin-control"
-            required
+            className={`admin-control ${getFieldError('name') ? 'border-rose-300 bg-rose-50/30' : ''}`}
+            required={isRequired('name')}
           />
+          {getFieldError('name') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('name')}</p>}
         </div>
       </form>
     </AdminModal>

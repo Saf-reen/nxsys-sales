@@ -156,11 +156,8 @@ function CategoryNav() {
   const menuItems = useMemo(() => {
     const dynamicGroupNames = Object.keys(megaMenuContent);
 
-    // Sort groups: Priority from NAVBAR_GROUPS, then others
-    const sortedGroups = [
-      ...NAVBAR_GROUPS.filter((g) => dynamicGroupNames.includes(g)),
-      ...dynamicGroupNames.filter((g) => !NAVBAR_GROUPS.includes(g)),
-    ];
+    // Sort all dynamic groups alphabetically
+    const sortedGroups = dynamicGroupNames.sort((a, b) => a.localeCompare(b));
 
     return sortedGroups.map((group) => ({
       name: group,

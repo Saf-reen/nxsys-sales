@@ -6,6 +6,8 @@ interface CategoryDetailModalProps {
   open: boolean;
   onClose: () => void;
   onAddSub?: (category: any) => void;
+  onEditSub?: (subcategory: any) => void;
+  onDeleteSub?: (subcategory: any) => void;
   category: any;
   subcategories: any[];
 }
@@ -14,6 +16,8 @@ function CategoryDetailModal({
   open,
   onClose,
   onAddSub,
+  onEditSub,
+  onDeleteSub,
   category,
   subcategories = [],
 }: CategoryDetailModalProps) {
@@ -83,8 +87,25 @@ function CategoryDetailModal({
                     <div className="h-2 w-2 rounded-full bg-primary/40" />
                     <p className="text-sm font-bold text-slate-700">{sub.name}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">ID: {sub.id}</span>
+                  <div className="flex items-center gap-1.5">
+                    {onEditSub && (
+                      <button
+                        type="button"
+                        onClick={() => onEditSub(sub)}
+                        className="rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-white hover:shadow-sm transition-all"
+                      >
+                        Edit
+                      </button>
+                    )}
+                    {onDeleteSub && (
+                      <button
+                        type="button"
+                        onClick={() => onDeleteSub(sub)}
+                        className="rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-500 hover:bg-white hover:shadow-sm transition-all"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               ))

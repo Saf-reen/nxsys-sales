@@ -123,20 +123,27 @@ export const unwrapResponse = (response: any) => response?.data ?? response ?? n
 export const getApiErrorMessage = (error: any, fallback = 'Request failed') => {
   const data = error?.response?.data || error?.data;
   if (!data) return error?.message || fallback;
+  
   if (typeof data === 'string') return data.trim() || fallback;
 
-  // DRF often returns { "field_name": ["error message"] } or { "detail": "error message" }
-  // We scan for common keys or return the first string value we find
+  if (Array.isArray(data)) {
+    const first = data[0];
+    return typeof first === 'string' ? first : fallback;
+  }
+
   if (typeof data === 'object') {
+    // 1. Common DRF/Axios error keys
     const candidate = data.error || data.message || data.detail || data.non_field_errors || data.msg;
     if (candidate) {
-      return (Array.isArray(candidate) ? candidate[0] : candidate) || fallback;
+      const msg = Array.isArray(candidate) ? candidate[0] : candidate;
+      if (typeof msg === 'string') return msg;
     }
 
-    // Fallback: look for the first array/string in the object
-    const firstValue = Object.values(data)[0];
-    if (firstValue) {
-      return (Array.isArray(firstValue) ? firstValue[0] : firstValue) || fallback;
+    // 2. Scan for the first string value in any field
+    const values = Object.values(data);
+    for (const val of values) {
+      if (typeof val === 'string') return val;
+      if (Array.isArray(val) && typeof val[0] === 'string') return val[0];
     }
   }
 

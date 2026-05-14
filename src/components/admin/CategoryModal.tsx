@@ -97,7 +97,7 @@ function CategoryModal({
       Object.entries(error.fieldErrors).forEach(([key, errs]) => {
         if (!handledFields.includes(key) && key !== 'non_field_errors') {
           if (Array.isArray(errs)) {
-            errs.forEach(e => messages.push(`${key}: ${e}`));
+            errs.forEach(e => messages.push(String(e)));
           }
         }
       });

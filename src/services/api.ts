@@ -470,6 +470,7 @@ export const catalogApi = {
       }
     }).then(unwrapResponse);
   },
+  getProductMetadata: () => api.options('/products/products/').then(unwrapResponse),
   createSubcategory: (data: any) => api.post('/products/subcategories/', data).then(unwrapResponse),
   deleteSubcategory: (id: any) => api.delete(joinPath('products', 'subcategories', id)).then(unwrapResponse),
 };
@@ -567,6 +568,7 @@ export const updateProduct = catalogApi.updateProduct.bind(catalogApi);
 export const patchProduct = catalogApi.patchProduct.bind(catalogApi);
 export const deleteProduct = catalogApi.deleteProduct.bind(catalogApi);
 export const getCatalogData = catalogApi.getCatalogData.bind(catalogApi);
+export const getProductMetadata = catalogApi.getProductMetadata.bind(catalogApi);
 export const bulkUploadProducts = catalogApi.bulkUploadProducts.bind(catalogApi);
 export const createCategory = categoryApi.createCategory.bind(categoryApi);
 export const updateCategory = categoryApi.updateCategory.bind(categoryApi);

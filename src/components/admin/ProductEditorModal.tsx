@@ -137,7 +137,8 @@ interface ProductEditorModalProps {
   categories?: Category[];
   subcategoriesByCategory?: Record<string, Subcategory[]>;
   submitting: boolean;
-  error?: string | null;
+  error?: any;
+  metadata?: any;
   brands?: Brand[];
   productFlags?: ProductFlag[];
   setBrands: React.Dispatch<React.SetStateAction<Brand[]>>;
@@ -153,6 +154,7 @@ function ProductEditorModal({
   subcategoriesByCategory = {},
   submitting,
   error,
+  metadata,
   brands = [],
   productFlags = [],
   setBrands,
@@ -473,6 +475,22 @@ const resolvedProductFlags = useMemo(() => {
 
 
 
+  const getFieldError = (name: string) => {
+    if (error && typeof error === 'object' && error.fieldErrors) {
+      return error.fieldErrors[name]?.[0];
+    }
+    return null;
+  };
+
+  const isRequired = (name: string) => {
+    // If it's an edit, the backend might have different requirements than a create
+    const action = product ? 'PUT' : 'POST';
+    const field = metadata?.actions?.[action]?.[name] || metadata?.actions?.POST?.[name];
+    return field?.required || false;
+  };
+
+  const topLevelError = typeof error === 'string' ? error : error?.message;
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -574,14 +592,14 @@ const resolvedProductFlags = useMemo(() => {
     >
       <form id="admin-product-form" onSubmit={handleSubmit} className="space-y-8 pb-12">
         {/* Error Display */}
-        {error && (
+        {topLevelError && (
           <div className="rounded-[20px] bg-rose-50 border border-rose-200 p-5 mb-8 flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
               <X size={20} strokeWidth={3} />
             </div>
             <div>
               <p className="text-xs font-black uppercase tracking-widest text-rose-500">Submission Error</p>
-              <p className="text-sm font-bold text-rose-900 mt-0.5">{error}</p>
+              <p className="text-sm font-bold text-rose-900 mt-0.5">{topLevelError}</p>
             </div>
           </div>
         )}
@@ -593,18 +611,23 @@ const resolvedProductFlags = useMemo(() => {
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Product name <span className="text-rose-500">*</span></span>
+              <span className="text-sm font-semibold text-slate-700">
+                Product name {isRequired('name') && <span className="text-rose-500">*</span>}
+              </span>
               <input
                 name="name"
                 value={form.name}
                 onChange={handleChange}
                 maxLength={255}
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary"
-                required
+                required={isRequired('name')}
+                className={`w-full rounded-2xl border ${getFieldError('name') ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200'} px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary`}
               />
+              {getFieldError('name') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('name')}</p>}
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Brand <span className="text-rose-500">*</span></span>
+              <span className="text-sm font-semibold text-slate-700">
+                Brand {isRequired('brand') && <span className="text-rose-500">*</span>}
+              </span>
               <div className="flex flex-col gap-2">
                 <div className="flex gap-2 relative">
                   {!showNewBrandInput && !editingBrandId ? (
@@ -613,8 +636,8 @@ const resolvedProductFlags = useMemo(() => {
                         name="brand"
                         value={form.brand}
                         onChange={handleChange}
-                        className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary"
-                        required
+                        required={isRequired('brand')}
+                        className={`flex-1 rounded-2xl border ${getFieldError('brand') ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200'} px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary`}
                       >
                         <option value="">Select brand</option>
                         {brands.map((b) => (
@@ -711,16 +734,19 @@ const resolvedProductFlags = useMemo(() => {
                     </button>
                   )}
                 </div>
+                {getFieldError('brand') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('brand')}</p>}
               </div>
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Category <span className="text-rose-500">*</span></span>
+              <span className="text-sm font-semibold text-slate-700">
+                Category {isRequired('category') && <span className="text-rose-500">*</span>}
+              </span>
               <select
                 name="category"
                 value={form.category}
                 onChange={handleChange}
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary"
-                required
+                required={isRequired('category')}
+                className={`w-full rounded-2xl border ${getFieldError('category') ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200'} px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary`}
               >
                 <option value="">Select category</option>
                 {topLevelCategories.map((category) => (
@@ -729,16 +755,19 @@ const resolvedProductFlags = useMemo(() => {
                   </option>
                 ))}
               </select>
+              {getFieldError('category') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('category')}</p>}
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Subcategory <span className="text-rose-500">*</span></span>
+              <span className="text-sm font-semibold text-slate-700">
+                Subcategory {isRequired('subcategory') && <span className="text-rose-500">*</span>}
+              </span>
               <select
                 name="subcategory"
                 value={form.subcategory}
                 onChange={handleChange}
                 disabled={!form.category}
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary"
-                required
+                required={isRequired('subcategory')}
+                className={`w-full rounded-2xl border ${getFieldError('subcategory') ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200'} px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary`}
               >
                 <option value="">
                   {form.category ? 'Select subcategory' : 'Choose a category first'}
@@ -749,18 +778,23 @@ const resolvedProductFlags = useMemo(() => {
                   </option>
                 ))}
               </select>
+              {getFieldError('subcategory') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('subcategory')}</p>}
             </label>
             <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-semibold text-slate-700">Description <span className="text-rose-500">*</span></span>
+              <span className="text-sm font-semibold text-slate-700">
+                Description {isRequired('description') && <span className="text-rose-500">*</span>}
+              </span>
               <textarea
                 name="description"
                 value={form.description}
                 onChange={handleChange}
                 onPaste={handleSmartPaste}
                 rows={4}
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary"
+                required={isRequired('description')}
+                className={`w-full rounded-2xl border ${getFieldError('description') ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200'} px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary`}
                 placeholder="Short operational summary for buyers"
               />
+              {getFieldError('description') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('description')}</p>}
             </label>
           </div>
         </section>
@@ -819,38 +853,49 @@ const resolvedProductFlags = useMemo(() => {
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">MPN</span>
+              <span className="text-sm font-semibold text-slate-700">
+                MPN {isRequired('mpn') && <span className="text-rose-500">*</span>}
+              </span>
               <input
                 name="mpn"
                 value={form.mpn}
                 onChange={handleChange}
                 maxLength={100}
+                required={isRequired('mpn')}
                 placeholder="Manufacturer Part Number"
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary"
+                className={`w-full rounded-2xl border ${getFieldError('mpn') ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200'} px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary`}
               />
+              {getFieldError('mpn') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('mpn')}</p>}
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">SKU</span>
+              <span className="text-sm font-semibold text-slate-700">
+                SKU {isRequired('sku') && <span className="text-rose-500">*</span>}
+              </span>
               <input
                 name="sku"
                 value={form.sku}
                 onChange={handleChange}
                 maxLength={100}
+                required={isRequired('sku')}
                 placeholder="Internal SKU"
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary"
+                className={`w-full rounded-2xl border ${getFieldError('sku') ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200'} px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary`}
               />
+              {getFieldError('sku') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('sku')}</p>}
             </label>
             <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">Stock <span className="text-rose-500">*</span></span>
+              <span className="text-sm font-semibold text-slate-700">
+                Stock {isRequired('stock') && <span className="text-rose-500">*</span>}
+              </span>
               <input
                 name="stock"
                 type="number"
                 min="0"
                 value={form.stock}
                 onChange={handleChange}
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary"
-                required
+                required={isRequired('stock')}
+                className={`w-full rounded-2xl border ${getFieldError('stock') ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200'} px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary`}
               />
+              {getFieldError('stock') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('stock')}</p>}
             </label>
           </div>
 
@@ -976,20 +1021,24 @@ const resolvedProductFlags = useMemo(() => {
           </div>
           <div className="space-y-3">
             <label className="field-stack">
-              <span className="text-sm font-semibold text-slate-700">Detailed Features (New line per point)</span>
+              <span className="text-sm font-semibold text-slate-700">
+                Detailed Features (New line per point) {isRequired('highlights') && <span className="text-rose-500">*</span>}
+              </span>
               <textarea
                 name="highlights"
                 value={form.highlights}
                 onChange={handleChange}
                 onPaste={handleSmartPaste}
                 rows={6}
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary"
+                required={isRequired('highlights')}
+                className={`w-full rounded-2xl border ${getFieldError('highlights') ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200'} px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary`}
                 placeholder="Enter key product features... 
 Example:
 High-speed data transfer
 Premium build quality
 3-year warranty"
               />
+              {getFieldError('highlights') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('highlights')}</p>}
             </label>
             <p className="text-[10px] text-slate-400 font-medium">
               Each new line will be automatically converted into a bullet point on the live product page. Perfect for detailed technical advantages and selling points.
@@ -1034,6 +1083,7 @@ Premium build quality
               <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
             </label>
           </div>
+          {getFieldError('product_image') && <p className="text-[10px] font-bold text-rose-500 mt-2">{getFieldError('product_image')}</p>}
         </section>
 
         {/* Merchandising Flags */}

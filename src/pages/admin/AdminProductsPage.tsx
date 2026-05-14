@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Check, Edit2, X, Eye, Trash2 } from 'lucide-react';
-import { getCategoryName, getApiErrorMessage, getBrandName, resolveAssetUrl, getEntityId } from '@/services';
+import { getCategoryName, getApiErrorMessage, getNormalizedApiError, getBrandName, resolveAssetUrl, getEntityId } from '@/services';
 import { getCatalogData } from '@/services';
 import {
   createProduct,
@@ -9,6 +9,7 @@ import {
   patchProduct,
   bulkUploadProducts,
   deleteProduct,
+  getProductMetadata,
 } from '@/services';
 import { showToast } from '@/utils/helpers';
 import AdminDataTable from '@/components/admin/AdminDataTable';
@@ -42,6 +43,7 @@ function AdminProductsPage() {
   const [saving, setSaving] = useState(false);
   const [brands, setBrands] = useState<any[]>([]);
   const [productFlags, setProductFlags] = useState<any[]>([]);
+  const [productMetadata, setProductMetadata] = useState<any>(null);
   const [saveError, setSaveError] = useState<any>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
@@ -78,6 +80,12 @@ function AdminProductsPage() {
       setProducts(productList);
       setBrands(Array.isArray(catalogData.brands) ? catalogData.brands : []);
       setProductFlags(catalogData.productFlags || []);
+      try {
+        const metadata = await getProductMetadata();
+        setProductMetadata(metadata);
+      } catch {
+        // Fallback or ignore if OPTIONS not supported
+      }
     } catch (err) {
       setError(getApiErrorMessage(err, 'Failed to load products'));
     } finally {
@@ -133,11 +141,11 @@ function AdminProductsPage() {
       setActiveProduct(null);
       setSaveError(null);
     } catch (err) {
-      const errorMessage = getApiErrorMessage(err, 'Product save failed');
-      setSaveError(errorMessage);
+      const errorData = getNormalizedApiError(err, { fallbackMessage: 'Product save failed' });
+      setSaveError(errorData);
       showToast({
         title: 'Unable to save product',
-        message: errorMessage,
+        message: errorData.message,
         type: 'error',
       });
     } finally {
@@ -483,6 +491,7 @@ function AdminProductsPage() {
         productFlags={productFlags}
         submitting={saving}
         error={saveError}
+        metadata={productMetadata}
         onClose={() => {
           setEditorOpen(false);
           setActiveProduct(null);

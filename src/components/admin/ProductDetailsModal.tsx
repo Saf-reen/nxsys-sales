@@ -188,15 +188,18 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ open, product
               <h3 className="text-sm font-bold text-slate-950 uppercase tracking-wider">Image Gallery</h3>
             </div>
             <div className="flex flex-wrap gap-4">
-              {images.map((img, idx) => (
-                <div key={idx} className="h-24 w-24 overflow-hidden rounded-2xl border border-slate-100 bg-white p-2">
-                  <img
-                    src={resolveAssetUrl(img) || ''}
-                    alt={`Gallery ${idx}`}
-                    className="h-full w-full object-contain"
-                  />
-                </div>
-              ))}
+              {images.map((img: any, idx) => {
+                const imageUrl = typeof img === 'string' ? img : (img?.image || img?.url || img?.image_url);
+                return (
+                  <div key={idx} className="h-24 w-24 overflow-hidden rounded-2xl border border-slate-100 bg-white p-2">
+                    <img
+                      src={resolveAssetUrl(imageUrl) || ''}
+                      alt={`Gallery ${idx}`}
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                );
+              })}
             </div>
           </section>
         )}

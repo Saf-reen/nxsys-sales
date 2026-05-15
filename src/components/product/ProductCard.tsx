@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowRight, Heart } from 'lucide-react';
 import placeholder from '../../assets/placeholder.jpg';
@@ -9,11 +9,33 @@ import { useWishlist } from '@/hooks/useWishlist';
 function ProductCard({ product, viewMode = 'grid' }) {
   const isListView = viewMode === 'list';
   const detailPath = `/products/${product.id}`;
-  const mainImage = resolveAssetUrl(product.images?.[0]?.image || product.image || placeholder) ?? '';
+  
+  // Carousel State
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const carouselTimer = useRef<any>(null);
+
+  const images = Array.isArray(product.images) && product.images.length > 0
+    ? product.images.map((img: any) => typeof img === 'string' ? img : (img.image || img.url || img.image_url))
+    : [product.image || product.product_image || placeholder];
+
   const wishlist = useWishlist();
   const isWishlisted = wishlist?.isWishlisted(product.id) || false;
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Carousel Logic
+  useEffect(() => {
+    if (isHovered && images.length > 1) {
+      carouselTimer.current = setInterval(() => {
+        setActiveIdx((prev) => (prev + 1) % images.length);
+      }, 1500);
+    } else {
+      if (carouselTimer.current) clearInterval(carouselTimer.current);
+      setActiveIdx(0);
+    }
+    return () => { if (carouselTimer.current) clearInterval(carouselTimer.current); };
+  }, [isHovered, images.length]);
 
   const handleImageError = (e) => { e.currentTarget.src = placeholder; };
 
@@ -84,20 +106,43 @@ function ProductCard({ product, viewMode = 'grid' }) {
   /* ── LIST VIEW ── */
   if (isListView) {
     return (
-      <article className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_2px_12px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_20px_44px_rgba(15,23,42,0.1)]">
+      <article 
+        className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_2px_12px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_20px_44px_rgba(15,23,42,0.1)]"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         <WishlistBtn />
         <Link to={detailPath} className="block">
           <div className="flex flex-col sm:flex-row">
-            {/* Image */}
-            <div className="relative flex h-48 w-full shrink-0 items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 to-white p-5 sm:h-auto sm:w-56 sm:p-6 lg:w-64">
-              <img
-                src={mainImage}
-                alt={product.name}
-                onError={handleImageError}
-                className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.04]"
-                loading="lazy"
-                decoding="async"
-              />
+            <div className="relative h-48 w-full shrink-0 overflow-hidden bg-gradient-to-br from-slate-50 to-white sm:h-auto sm:w-56 lg:w-64">
+              <div 
+                className="flex h-full transition-transform duration-500 ease-out"
+                style={{ transform: `translateX(-${activeIdx * 100}%)` }}
+              >
+                {images.map((img, i) => (
+                  <div key={i} className="h-full w-full shrink-0 p-5 sm:p-6">
+                    <img
+                      src={resolveAssetUrl(img) || placeholder}
+                      alt={`${product.name} - ${i}`}
+                      onError={handleImageError}
+                      className="h-full w-full object-contain"
+                      loading={i === 0 ? "eager" : "lazy"}
+                    />
+                  </div>
+                ))}
+              </div>
+              
+              {/* Carousel Indicators */}
+              {images.length > 1 && (
+                <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 px-2 z-10">
+                  {images.map((_, i) => (
+                    <div 
+                      key={i} 
+                      className={`h-1 rounded-full transition-all duration-300 ${i === activeIdx ? 'w-4 bg-primary' : 'w-1 bg-slate-300 opacity-50'}`} 
+                    />
+                  ))}
+                </div>
+              )}
               <Badges stack />
             </div>
 
@@ -167,21 +212,45 @@ function ProductCard({ product, viewMode = 'grid' }) {
 
   /* ── GRID VIEW ── */
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-[0_2px_10px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_20px_44px_rgba(15,23,42,0.1)]">
+    <article 
+      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/70 bg-white shadow-[0_2px_10px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_20px_44px_rgba(15,23,42,0.1)]"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <WishlistBtn />
       <Link to={detailPath} className="flex h-full flex-col">
         {/* Image */}
         <div className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-white">
-          <div className="aspect-square p-4 sm:aspect-[4/3] sm:p-5">
-            <img
-              src={mainImage}
-              alt={product.name}
-              onError={handleImageError}
-              className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.05]"
-              loading="lazy"
-              decoding="async"
-            />
+          <div className="aspect-square sm:aspect-[4/3] overflow-hidden">
+            <div 
+              className="flex h-full transition-transform duration-500 ease-out"
+              style={{ transform: `translateX(-${activeIdx * 100}%)` }}
+            >
+              {images.map((img, i) => (
+                <div key={i} className="h-full w-full shrink-0 p-4 sm:p-5">
+                  <img
+                    src={resolveAssetUrl(img) || placeholder}
+                    alt={`${product.name} - ${i}`}
+                    onError={handleImageError}
+                    className="h-full w-full object-contain"
+                    loading={i === 0 ? "eager" : "lazy"}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
+
+          {/* Carousel Indicators */}
+          {images.length > 1 && (
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5 px-2 z-10">
+              {images.map((_, i) => (
+                <div 
+                  key={i} 
+                  className={`h-1 rounded-full transition-all duration-300 ${i === activeIdx ? 'w-4 bg-primary' : 'w-1 bg-slate-300 opacity-50'}`} 
+                />
+              ))}
+            </div>
+          )}
           <Badges />
         </div>
 

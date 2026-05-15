@@ -248,13 +248,18 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
 
           {/* Gallery */}
-          <div className="rounded-[32px] border border-slate-200/80 bg-white p-4 shadow-[0_8px_40px_rgba(15,23,42,0.07)] sm:p-8 lg:p-10">
+          <div className="flex flex-col">
             <ProductGallery images={galleryImages} alt={product.name} />
+            
+            {/* Additional info below gallery if needed */}
+            <div className="mt-8 hidden lg:block">
+               {/* Amazon often has some promo or info here, leaving as placeholder for future */}
+            </div>
           </div>
 
           {/* Right panel */}
           <div className="flex flex-col gap-6">
-            <div className="rounded-[32px] border border-slate-200/80 bg-white p-6 shadow-[0_8px_40px_rgba(15,23,42,0.07)] sm:p-8">
+            <div className="rounded-[32px] border border-slate-200/80 bg-white p-6 shadow-[0_8px_40px_rgba(15,23,42,0.07)] sm:p-8 lg:sticky lg:top-24">
 
               {/* Brand + stock */}
               <div className="flex items-center justify-between gap-3">
@@ -478,7 +483,7 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
                   {/* Current product image box */}
                   <div className="relative h-[130px] w-[130px] shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-3">
                     <img
-                      src={resolveAssetUrl(galleryImages[0]?.image || product.image) ?? undefined}
+                      src={resolveAssetUrl(typeof galleryImages[0] === 'string' ? galleryImages[0] : (galleryImages[0]?.image || galleryImages[0]?.url || galleryImages[0]?.image_url)) ?? undefined}
                       alt={product.name}
                       className="h-full w-full object-contain"
                       onError={(e) => { e.currentTarget.src = placeholder; }}
@@ -503,7 +508,7 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
                         }`}
                       >
                         <img
-                          src={resolveAssetUrl((item.images?.[0] as any)?.image || item.image) ?? undefined}
+                          src={resolveAssetUrl(typeof item.images?.[0] === 'string' ? item.images[0] : ((item.images?.[0] as any)?.image || (item.images?.[0] as any)?.url || (item.images?.[0] as any)?.image_url || item.image)) ?? undefined}
                           alt={item.name}
                           className="h-full w-full object-contain"
                           onError={(e) => { e.currentTarget.src = placeholder; }}
@@ -608,7 +613,7 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
                 <div className="overflow-hidden bg-gradient-to-br from-slate-50 to-white p-5">
                   <div className="aspect-square">
                     <img
-                      src={resolveAssetUrl((item.images?.[0] as any)?.image || item.image) ?? undefined}
+                      src={resolveAssetUrl(typeof item.images?.[0] === 'string' ? item.images[0] : ((item.images?.[0] as any)?.image || (item.images?.[0] as any)?.url || (item.images?.[0] as any)?.image_url || item.image)) ?? undefined}
                       alt={item.name}
                       className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.05]"
                       onError={(e) => { e.currentTarget.src = placeholder; }}

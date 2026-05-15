@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import placeholder from '../../assets/placeholder.jpg';
 import { getBrandName, getCategoryName } from '@/services';
 import { useProducts } from '@/hooks/useProducts';
 import HeroBanner from '@/components/home/HeroBanner';
@@ -58,7 +59,8 @@ const buildProductCard = (product: any, categories: any[] = []) => {
     productType: normalizeText(product.subcategory) || categoryName || 'Product',
     mpn: product.mpn || product.model_number || product.model || '--',
     sku: product.sku || product.sku_code || product.item_code || '--',
-    image: product.images?.[0] || product.image || product.thumbnail || '',
+    image: product.image || product.product_image || (Array.isArray(product.images) ? product.images[0] : '') || placeholder,
+    images: product.images || [],
     isNew: Boolean(product.isNew || product.featured),
   };
 };

@@ -84,6 +84,25 @@ api.interceptors.request.use((config) => {
 const shouldSkipRefresh = (url: string) =>
   url.includes('/login/') || url.includes('/token/refresh/') || url.includes('/register/');
 
+// Single in-flight refresh promise shared across all concurrent 401s
+let _refreshPromise: Promise<string> | null = null;
+const getRefreshedToken = (): Promise<string> => {
+  if (!_refreshPromise) {
+    const refresh = authSessionStorage.getRefreshToken();
+    if (!refresh) return Promise.reject(new Error('No refresh token'));
+    _refreshPromise = axios
+      .post(`${getBaseUrl()}/accounts/token/refresh/`, { refresh })
+      .then((res) => {
+        const newToken: string = res.data.access;
+        const user = authSessionStorage.getUser();
+        authSessionStorage.setSession(newToken, user, refresh);
+        return newToken;
+      })
+      .finally(() => { _refreshPromise = null; });
+  }
+  return _refreshPromise;
+};
+
 api.interceptors.response.use(
   (response) => response,
   async (axiosError) => {
@@ -95,14 +114,7 @@ api.interceptors.response.use(
     if (isTokenExpired && !originalRequest._retry && !shouldSkipRefresh(originalRequest.url ?? '')) {
       originalRequest._retry = true;
       try {
-        const refresh = authSessionStorage.getRefreshToken();
-        if (!refresh) throw new Error('No refresh token');
-
-        const res = await axios.post(`${getBaseUrl()}/accounts/token/refresh/`, { refresh });
-        const newToken = res.data.access;
-        const user = authSessionStorage.getUser();
-        authSessionStorage.setSession(newToken, user, refresh);
-
+        const newToken = await getRefreshedToken();
         const headers = { ...originalRequest.headers, Authorization: `Bearer ${newToken}` };
         return api({ ...originalRequest, headers });
       } catch (err) {
@@ -120,34 +132,41 @@ api.interceptors.response.use(
 // ---------------------------------------------------------------------------
 export const unwrapResponse = (response: any) => response?.data ?? response ?? null;
 
-export const getApiErrorMessage = (error: any, fallback = 'Request failed') => {
-  const data = error?.response?.data || error?.data;
+export const getApiErrorMessage = (error: any, fallback = 'Request failed'): string => {
+  const data = error?.response?.data ?? error?.data;
   if (!data) return error?.message || fallback;
-  
   if (typeof data === 'string') return data.trim() || fallback;
 
-  if (Array.isArray(data)) {
-    const first = data[0];
-    return typeof first === 'string' ? first : fallback;
-  }
-
-  if (typeof data === 'object') {
-    // 1. Common DRF/Axios error keys
-    const candidate = data.error || data.message || data.detail || data.non_field_errors || data.msg;
-    if (candidate) {
-      const msg = Array.isArray(candidate) ? candidate[0] : candidate;
-      if (typeof msg === 'string') return msg;
+  const walk = (node: any, path: string[] = []): string | null => {
+    if (node == null) return null;
+    if (typeof node === 'string') {
+      const label = path.length ? `${path.join('.')}: ` : '';
+      return `${label}${node}`;
     }
-
-    // 2. Scan for the first string value in any field
-    const values = Object.values(data);
-    for (const val of values) {
-      if (typeof val === 'string') return val;
-      if (Array.isArray(val) && typeof val[0] === 'string') return val[0];
+    if (Array.isArray(node)) {
+      for (let i = 0; i < node.length; i++) {
+        const found = walk(node[i], path);
+        if (found) return found;
+      }
+      return null;
     }
-  }
+    if (typeof node === 'object') {
+      for (const key of ['detail', 'error', 'message', 'non_field_errors', 'msg']) {
+        if (key in node) {
+          const found = walk((node as any)[key], path);
+          if (found) return found;
+        }
+      }
+      for (const [key, value] of Object.entries(node)) {
+        if (['detail', 'error', 'message', 'non_field_errors', 'msg'].includes(key)) continue;
+        const found = walk(value, [...path, key]);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
 
-  return fallback;
+  return walk(data) || fallback;
 };
 
 export const getNormalizedApiError = (error: any, _options?: any) => {
@@ -198,20 +217,56 @@ export const extractList = (payload: any) => {
   return Array.isArray(data) ? data : (data?.results || data?.items || []);
 };
 
+/**
+ * Recursively converts a nested object/array into FormData.
+ *
+ * Rules:
+ *  - Files at any depth are appended as-is.
+ *  - A flat array of Files is appended with the SAME key repeated
+ *    (DRF ListField / `getlist()` style). e.g. `uploaded_images` x N.
+ *  - Mixed/object arrays use bracketed indices: `items[0][name]`.
+ */
 export const toFormData = (payload: Record<string, any>) => {
   const formData = new FormData();
-  Object.entries(payload).forEach(([key, value]) => {
-    if (value === null || value === undefined) return;
-    if ((key === 'image' || key === 'product_image') && value instanceof File) {
-      formData.append('product_image', value);
-    } else if (key === 'files' && Array.isArray(value)) {
-      value.forEach(f => { if (f instanceof File) formData.append('product_image', f); });
-    } else if (Array.isArray(value) || typeof value === 'object') {
-      formData.append(key, JSON.stringify(value));
-    } else {
-      formData.append(key, String(value));
+
+  const appendRecursive = (data: any, prefix: string) => {
+    if (data === null || data === undefined) return;
+
+    if (data instanceof File || data instanceof Blob) {
+      formData.append(prefix, data);
+      return;
     }
-  });
+
+    if (Array.isArray(data)) {
+      // Flat array of Files -> repeat the key (DRF ListField style)
+      const allFiles = data.length > 0 && data.every(item => item instanceof File || item instanceof Blob);
+      if (allFiles) {
+        data.forEach(file => formData.append(prefix, file));
+        return;
+      }
+      data.forEach((item, index) => {
+        appendRecursive(item, `${prefix}[${index}]`);
+      });
+      return;
+    }
+
+    if (typeof data === 'object') {
+      Object.entries(data).forEach(([key, value]) => {
+        const fullKey = prefix ? `${prefix}[${key}]` : key;
+        appendRecursive(value, fullKey);
+      });
+      return;
+    }
+
+    if (typeof data === 'boolean') {
+      formData.append(prefix, data ? 'true' : 'false');
+      return;
+    }
+
+    formData.append(prefix, String(data));
+  };
+
+  appendRecursive(payload, '');
   return formData;
 };
 
@@ -256,16 +311,55 @@ export const normalizeSubcategory = (subcategory: any, fallbackCategoryId: any =
 
 export const normalizeProduct = (product: any, catalog: any = {}) => {
   if (!product) return null;
-  const imagesSource = product.product_image ?? product.images ?? product.image;
-  const images = Array.isArray(imagesSource) ? imagesSource.map(resolveAssetUrl).filter(Boolean) : [resolveAssetUrl(imagesSource)].filter(Boolean);
+
+  // Extract all possible images from various fields
+  const sourceList: any[] = [];
+
+  if (Array.isArray(product.images)) {
+    sourceList.push(...product.images);
+  } else if (product.images) {
+    sourceList.push(product.images);
+  }
+
+  if (product.product_image) sourceList.push(product.product_image);
+  if (product.image) sourceList.push(product.image);
+
+  // Normalize and resolve URLs, keeping only unique ones
+  const seenUrls = new Set<string>();
+  const normalizedImages = sourceList
+    .map((img: any) => {
+      // Extract URL string from string or various object keys
+      const url = typeof img === 'string' ? img : (img?.image_url || img?.image || img?.url || img?.src);
+      const resolved = resolveAssetUrl(url);
+      if (!resolved || seenUrls.has(resolved)) return null;
+
+      seenUrls.add(resolved);
+
+      // If it was an object, return a clean version with resolved fields
+      if (typeof img === 'object' && img !== null) {
+        return { 
+          ...img, 
+          image: resolved, 
+          url: resolved, 
+          image_url: resolved // Ensure all common keys are resolved
+        };
+      }
+      return { image: resolved, url: resolved, image_url: resolved };
+    })
+    .filter(Boolean);
+
+  const primaryImageObj = normalizedImages[0];
+  const primaryImageUrl = typeof primaryImageObj === 'string'
+    ? primaryImageObj
+    : (primaryImageObj as any)?.url;
 
   const normalized = {
     ...product,
     id: product.id ?? product.pk,
     name: product.name || 'Untitled product',
-    image: images[0] || null,
-    product_image: images[0] || null,
-    images: images,
+    image: primaryImageUrl || null,
+    product_image: primaryImageUrl || null,
+    images: normalizedImages,
   };
 
   // Normalize nested lists if they contain objects
@@ -312,16 +406,17 @@ const joinPath = (...parts: any[]) => `/${parts.filter(p => p).map(p => String(p
 // --- PARAM CLEANER ---
 const cleanSearchParams = (params: any) => {
   if (!params || typeof params !== 'object') return params;
+  const input = { ...params };
   const clean: Record<string, any> = {};
 
   // Map 'q' to 'search' for compatibility with /products/search/
-  if (params.q && !params.search) {
-    params.search = params.q;
-    delete params.q;
+  if (input.q && !input.search) {
+    input.search = input.q;
+    delete input.q;
   }
 
   // Only keep primitive values or arrays to prevent [object Object] in URLs
-  Object.entries(params).forEach(([key, value]) => {
+  Object.entries(input).forEach(([key, value]) => {
     // Specifically ignore internal catalog structure if passed accidentally
     if (['categoryTree', 'subcategoriesByCategory', 'productFlags'].includes(key)) return;
 
@@ -339,6 +434,54 @@ const cleanSearchParams = (params: any) => {
   });
 
   return clean;
+};
+
+// ---------------------------------------------------------------------------
+// PRODUCT PAYLOAD BUILDER
+// ---------------------------------------------------------------------------
+/**
+ * Transforms the form's `images` array into the shape the backend expects.
+ *
+ *  Backend (ProductSerializer) accepts:
+ *   - `product_image` : single ImageField (the "main"/hero image)
+ *   - `uploaded_images`: ListField of new files appended to the gallery
+ *   - `images` in the GET response is READ-ONLY and must NOT be sent.
+ *
+ * Input form shape (existing convention used across the app):
+ *   images: Array<{
+ *     image?: File | string,    // File for new uploads, string URL for existing
+ *     is_main?: boolean,
+ *     id?: number | null
+ *   }>
+ *
+ * Output:
+ *   - Removes the read-only `images` field from the payload
+ *   - Sets `product_image` to the file flagged as main (if it's a NEW file)
+ *   - Sets `uploaded_images` to all OTHER new files
+ *   - Existing (string URL) images are left untouched on the server
+ *     (backend is append-only; deletion needs a separate endpoint)
+ */
+const buildProductPayload = (payload: any) => {
+  const { images, ...rest } = payload ?? {};
+  const out: any = { ...rest };
+
+  if (!Array.isArray(images) || images.length === 0) return out;
+
+  const newFileEntries = images.filter(
+    (img: any) => img && img.image instanceof File
+  );
+  if (newFileEntries.length === 0) return out;
+
+  // Every newly uploaded file goes into the gallery.
+  out.uploaded_images = newFileEntries.map((img: any) => img.image as File);
+
+  // Only set product_image if the user explicitly marked one as main.
+  const userMarkedMain = newFileEntries.find((img: any) => img.is_main === true);
+  if (userMarkedMain) {
+    out.product_image = userMarkedMain.image as File;
+  }
+
+  return out;
 };
 
 export const authApi = {
@@ -421,7 +564,7 @@ export const catalogApi = {
             subcategories: []
           };
         }
-        
+
         // Find and sort children for this item
         const children = (subcategoriesByCategory[String(cat.id)] || [])
           .sort((a, b) => a.name.localeCompare(b.name));
@@ -457,34 +600,45 @@ export const catalogApi = {
     return normalizeProducts(list, cat)[0] || null;
   }),
   getSimilarProducts: (id: any, cat: any = {}) => publicApi.get(`/products/products/${id}/similar/`).then(res => normalizeProducts(res, cat)),
+
   createProduct: (payload: any, _catalog?: any) => {
-    return api.post('/products/products/', toFormData(payload), {
+    const built = buildProductPayload(payload);
+    return api.post('/products/products/', toFormData(built), {
       headers: { 'Content-Type': 'multipart/form-data' }
     }).then(unwrapResponse);
   },
+
   updateProduct: (id: any, payload: any, _catalog?: any) => {
-    return api.put(`/products/products/${id}/`, toFormData(payload), {
+    const built = buildProductPayload(payload);
+    return api.put(`/products/products/${id}/`, toFormData(built), {
       headers: { 'Content-Type': 'multipart/form-data' }
     }).then(unwrapResponse);
   },
+
   patchProduct: (id: any, payload: any) => {
-    return api.patch(`/products/products/${id}/`, toFormData(payload), {
+    const built = buildProductPayload(payload);
+    return api.patch(`/products/products/${id}/`, toFormData(built), {
       headers: { 'Content-Type': 'multipart/form-data' }
     }).then(unwrapResponse);
   },
+
   deleteProduct: (id: any) => api.delete(`/products/products/${id}/`).then(unwrapResponse),
-  bulkUploadProducts: (file: File, onProgress?: (percent: number) => void) => {
+
+  deleteProductImage: (imageId: any) =>
+    api.delete(joinPath('products', 'images', imageId)).then(unwrapResponse),
+
+  bulkUploadProducts: (file: File, imageFiles: File[] = [], onProgress?: (percent: number) => void) => {
     const formData = new FormData();
     formData.append('excel_file', file);
+    imageFiles.forEach((img) => formData.append('images', img));
     return api.post('/products/products/bulk/upload/', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 0,
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          onProgress(percentCompleted);
+          onProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
         }
-      }
+      },
     }).then(unwrapResponse);
   },
   getProductMetadata: () => publicApi.options('/products/products/').then(unwrapResponse),
@@ -530,7 +684,6 @@ export const normalizeRFQ = (request: any) => {
 export const rfqService = {
   getRequests: () => api.get('/orders/requests/').then(res => {
     const data = extractList(res);
-    console.log('RFQ Data received:', data);
     if (!Array.isArray(data)) return [];
     return data.map(normalizeRFQ).filter(Boolean);
   }),
@@ -586,6 +739,7 @@ export const createProduct = catalogApi.createProduct.bind(catalogApi);
 export const updateProduct = catalogApi.updateProduct.bind(catalogApi);
 export const patchProduct = catalogApi.patchProduct.bind(catalogApi);
 export const deleteProduct = catalogApi.deleteProduct.bind(catalogApi);
+export const deleteProductImage = catalogApi.deleteProductImage.bind(catalogApi);
 export const getCatalogData = catalogApi.getCatalogData.bind(catalogApi);
 export const getProductMetadata = catalogApi.getProductMetadata.bind(catalogApi);
 export const bulkUploadProducts = catalogApi.bulkUploadProducts.bind(catalogApi);

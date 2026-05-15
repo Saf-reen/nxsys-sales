@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Edit2, Trash2, X } from 'lucide-react';
+import { Check, Edit2, Star, Trash2, X } from 'lucide-react';
 import AdminModal from './AdminModal';
 import { getTopLevelCategories } from '@/utils/adminUtils';
 import { createBrand, updateBrand, deleteBrand } from '@/services';
@@ -27,7 +27,6 @@ interface FormState {
   category: string;
   subcategory: string;
   description: string;
-  stock: number;
   featured: boolean;
   top_selling: boolean;
   new_arrival: boolean;
@@ -55,31 +54,30 @@ const normalizeSpecification = (specification: Record<string, unknown> = {}, ind
   section: String(specification.section || specification.category || 'General').trim() || 'General',
 });
 
-const normalizeGroupedSpecifications = (groups: Record<string, unknown>[] = []): SpecRecord[] =>
-  groups.flatMap((group, groupIndex) =>
-    ((group?.items as Record<string, unknown>[] | undefined) || []).map((item, itemIndex) =>
-      normalizeSpecification(
-        {
-          id: item.id ?? `${groupIndex}-${itemIndex}`,
-          key: item.key,
-          value: item.value,
-          section: (group.category as string) || (group.section as string) || 'General',
-        },
-        groupIndex * 100 + itemIndex,
-      ),
-    ),
-  );
 
 const normalizeExistingImage = (image: unknown, index = 0): ExistingImage | null => {
-  if (!image || typeof image !== 'object') return null;
-  const img = image as Record<string, unknown>;
-  const url = (img.url as string) || (img.image as string) || (typeof image === 'string' ? image : '');
-  if (!url) return null;
-  return {
-    id: (img.id as string | number) ?? null,
-    url,
-    display_order: (img.display_order as number) ?? index,
-  };
+  if (!image) return null;
+  
+  if (typeof image === 'string') {
+    return {
+      id: null, // Strings don't have IDs in this context
+      url: image,
+      display_order: index,
+    };
+  }
+
+  if (typeof image === 'object') {
+    const img = image as Record<string, unknown>;
+    const url = (img.url as string) || (img.image_url as string) || (img.image as string) || '';
+    if (!url) return null;
+    return {
+      id: (img.id as string | number) ?? null,
+      url,
+      display_order: (img.display_order as number) ?? index,
+    };
+  }
+
+  return null;
 };
 
 const createInitialForm = (product: Product | null | undefined): FormState => {
@@ -99,7 +97,7 @@ const createInitialForm = (product: Product | null | undefined): FormState => {
   if (product?.product_image && typeof product.product_image === 'string') {
     const mainImgUrl = product.product_image;
     const alreadyIncluded = rawImages.some(img => {
-      const url = typeof img === 'string' ? img : (img as any)?.url || (img as any)?.image;
+      const url = typeof img === 'string' ? img : (img as any)?.url || (img as any)?.image_url || (img as any)?.image;
       return url === mainImgUrl;
     });
     if (!alreadyIncluded) rawImages.unshift(mainImgUrl);
@@ -115,7 +113,6 @@ const createInitialForm = (product: Product | null | undefined): FormState => {
     category: String((typeof product?.category === 'object' ? (product?.category as { id?: unknown })?.id : product?.category) || ''),
     subcategory: String(product?.subcategoryId || ''),
     description: product?.description || '',
-    stock: product?.stock ?? 0,
     featured: Boolean(product?.featured),
     top_selling: Boolean(product?.top_selling ?? product?.topSelling),
     new_arrival: Boolean(product?.new_arrival ?? product?.isNew),
@@ -198,11 +195,13 @@ function ProductEditorModal({
 
   const [sectionBeingRenamed, setSectionBeingRenamed] = useState<string | null>(null);
   const [renameSectionValue, setRenameSectionValue] = useState('');
+  const [mainImageIndex, setMainImageIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setForm(createInitialForm(product));
     setEditingBrandId(null);
     setSectionBeingRenamed(null);
+    setMainImageIndex(null);
   }, [product, open]);
 
 
@@ -497,28 +496,35 @@ const resolvedProductFlags = useMemo(() => {
     // Brand is now a ForeignKey on the backend — send the numeric pk directly.
     const brandId = form.brand ? Number(form.brand) : null;
 
+    // Combine existing images and new files; respect the admin's explicit main selection.
+    const images = [
+      ...form.existingImages.map((img, i) => ({
+        id: img.id || null,
+        image_url: img.url,
+        is_main: mainImageIndex === i,
+      })),
+      ...form.files.map((file, i) => ({
+        id: null,
+        image: file,
+        is_main: mainImageIndex === form.existingImages.length + i,
+      })),
+    ];
+
     onSubmit({
       name: form.name.trim(),
       brand: brandId,
       category: form.category ? Number(form.category) : null,
       subcategory: form.subcategory ? Number(form.subcategory) : null,
       description: form.description.trim(),
-      stock: Number(form.stock || 0),
       featured: Boolean(form.featured),
       top_selling: Boolean(form.top_selling),
       new_arrival: Boolean(form.new_arrival),
       mpn: form.mpn.trim(),
       sku: form.sku.trim(),
-      specifications: form.specifications.map(s => ({
-        key: s.key.trim(),
-        value: s.value.trim(),
-        section: s.section.trim() || 'General'
-      })).filter(s => s.key && s.value),
       highlights: typeof form.highlights === 'string'
         ? form.highlights.trim()
         : '',
-      files: form.files,
-      remaining_image_ids: form.existingImages.map(img => img.id).filter(Boolean),
+      images,
     });
   };
 
@@ -882,21 +888,6 @@ const resolvedProductFlags = useMemo(() => {
               />
               {getFieldError('sku') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('sku')}</p>}
             </label>
-            <label className="space-y-2">
-              <span className="text-sm font-semibold text-slate-700">
-                Stock {isRequired('stock') && <span className="text-rose-500">*</span>}
-              </span>
-              <input
-                name="stock"
-                type="number"
-                min="0"
-                value={form.stock}
-                onChange={handleChange}
-                required={isRequired('stock')}
-                className={`w-full rounded-2xl border ${getFieldError('stock') ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200'} px-4 py-3 text-sm outline-none transition-colors focus:border-yellowPrimary`}
-              />
-              {getFieldError('stock') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('stock')}</p>}
-            </label>
           </div>
 
           <div className="space-y-6">
@@ -1053,30 +1044,59 @@ Premium build quality
             <h3 className="mt-1 text-lg font-semibold text-slate-950">Images and gallery</h3>
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
-            {form.existingImages.map((image, index) => (
-              <div key={image.id || index} className="group relative aspect-square overflow-hidden rounded-[24px] border border-slate-200">
-                <img src={(resolveAssetUrl(image.url || image.image)) ?? undefined} alt="" className="h-full w-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveExistingImage(index)}
-                  className="absolute right-2 top-2 rounded-full bg-white/90 p-2 text-rose-600 shadow-sm transition-opacity opacity-0 group-hover:opacity-100"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                </button>
-              </div>
-            ))}
-            {previewUrls.map((item, index) => (
-              <div key={item.url} className="group relative aspect-square overflow-hidden rounded-[24px] border-2 border-primary/20">
-                <img src={item.url} alt="" className="h-full w-full object-cover" />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveNewFile(index)}
-                  className="absolute right-2 top-2 rounded-full bg-white/90 p-2 text-slate-600 shadow-sm"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                </button>
-              </div>
-            ))}
+            {form.existingImages.map((image, index) => {
+              const isMain = mainImageIndex === index;
+              return (
+                <div key={image.id || index} className={`group relative aspect-square overflow-hidden rounded-[24px] border-2 ${isMain ? 'border-primary' : 'border-slate-200'}`}>
+                  <img src={(resolveAssetUrl(image.url || image.image)) ?? undefined} alt="" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveExistingImage(index)}
+                    className="absolute right-2 top-2 rounded-full bg-white/90 p-2 text-rose-600 shadow-sm transition-opacity opacity-0 group-hover:opacity-100"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMainImageIndex(isMain ? null : index)}
+                    className={`absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide shadow-sm transition-all ${
+                      isMain ? 'bg-primary text-textMain' : 'bg-white/90 text-slate-500 opacity-0 group-hover:opacity-100'
+                    }`}
+                    title={isMain ? 'Remove main' : 'Set as main'}
+                  >
+                    <Star size={9} className={isMain ? 'fill-textMain' : ''} />
+                    {isMain ? 'Main' : 'Set main'}
+                  </button>
+                </div>
+              );
+            })}
+            {previewUrls.map((item, index) => {
+              const globalIndex = form.existingImages.length + index;
+              const isMain = mainImageIndex === globalIndex;
+              return (
+                <div key={item.url} className={`group relative aspect-square overflow-hidden rounded-[24px] border-2 ${isMain ? 'border-primary' : 'border-primary/20'}`}>
+                  <img src={item.url} alt="" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveNewFile(index)}
+                    className="absolute right-2 top-2 rounded-full bg-white/90 p-2 text-slate-600 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMainImageIndex(isMain ? null : globalIndex)}
+                    className={`absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide shadow-sm transition-all ${
+                      isMain ? 'bg-primary text-textMain' : 'bg-white/90 text-slate-500 opacity-0 group-hover:opacity-100'
+                    }`}
+                    title={isMain ? 'Remove main' : 'Set as main'}
+                  >
+                    <Star size={9} className={isMain ? 'fill-textMain' : ''} />
+                    {isMain ? 'Main' : 'Set main'}
+                  </button>
+                </div>
+              );
+            })}
             <label className="flex aspect-square cursor-pointer flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-slate-200 bg-slate-50 transition-colors hover:border-primary/50 hover:bg-primary/5">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400 group-hover:text-primary"><path d="M12 5v14M5 12h14" /></svg>
               <span className="mt-2 text-[10px] font-black uppercase tracking-widest text-slate-400">Upload</span>

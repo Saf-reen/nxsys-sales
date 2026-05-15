@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
 
@@ -28,10 +29,10 @@ function AdminModal({
 }: AdminModalProps) {
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/55 px-4 py-8 backdrop-blur-sm">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 px-4 py-8 backdrop-blur-md">
       <div
-        className={`relative flex max-h-full w-full flex-col overflow-hidden rounded-[28px] border border-slate-200/60 bg-white shadow-[0_32px_80px_rgba(15,23,42,0.22)] ${SIZE_CLASSES[size] ?? SIZE_CLASSES.lg}`}
+        className={`relative flex max-h-full w-full flex-col overflow-hidden rounded-[28px] border border-slate-200/60 bg-white shadow-[0_32px_80px_rgba(15,23,42,0.35)] ${SIZE_CLASSES[size] ?? SIZE_CLASSES.lg}`}
         role="dialog"
         aria-modal="true"
       >
@@ -77,7 +78,8 @@ function AdminModal({
         onClick={onClose}
         aria-hidden="true"
       />
-    </div>
+    </div>,
+    document.body
   );
 }
 

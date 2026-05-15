@@ -36,7 +36,7 @@ function AdminLayout() {
 
         {/* Sidebar */}
         <aside
-          className={`fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col bg-[#111318] transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-40 flex w-[280px] flex-col bg-[#111318] transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
           style={{ boxShadow: '4px 0 24px rgba(0,0,0,0.35)' }}
@@ -107,9 +107,9 @@ function AdminLayout() {
         </aside>
 
         {/* Main content area */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-x-clip">
+        <div className="flex min-w-0 flex-1 flex-col">
           {/* Top header */}
-          <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/95 backdrop-blur-lg">
+          <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-white/95 backdrop-blur-lg">
             <div className="mx-auto flex w-full items-center justify-between gap-4 px-4 py-3.5 sm:px-6 lg:px-8">
               <div className="flex min-w-0 items-center gap-3">
                 <button

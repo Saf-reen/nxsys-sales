@@ -47,9 +47,11 @@ function AdminProductsPage() {
   const [saveError, setSaveError] = useState<any>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [viewProduct, setViewProduct] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageFilesInputRef = useRef<HTMLInputElement>(null);
 
   const loadCatalog = async () => {
     setLoading(true);
@@ -224,8 +226,13 @@ function AdminProductsPage() {
     showToast({ title: 'Export complete', message: 'Product catalog exported to CSV.' });
   };
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
+  const handleImportClick = () => fileInputRef.current?.click();
+  const handleImageFilesClick = () => imageFilesInputRef.current?.click();
+
+  const handleImageFilesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length) setImageFiles(files);
+    event.target.value = '';
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -235,10 +242,22 @@ function AdminProductsPage() {
     setIsImporting(true);
     setImportProgress(0);
     try {
-      await bulkUploadProducts(file, (progress) => {
-        setImportProgress(progress);
-      });
-      showToast({ title: 'Import successful', message: 'Products have been imported successfully.' });
+      const result = await bulkUploadProducts(file, imageFiles, (progress) => setImportProgress(progress));
+      const successful: number = result?.successful ?? 0;
+      const failed: number = result?.failed ?? 0;
+      const warnings: string[] = result?.warnings ?? [];
+
+      if (failed > 0 || warnings.length > 0) {
+        const preview = warnings.slice(0, 3).join(' • ');
+        const more = warnings.length > 3 ? ` … and ${warnings.length - 3} more` : '';
+        showToast({
+          title: `Imported ${successful}, failed ${failed}`,
+          message: preview + more,
+          type: failed > 0 ? 'error' : 'warning',
+        });
+      } else {
+        showToast({ title: 'Import successful', message: `${successful} products imported.` });
+      }
       loadCatalog();
     } catch (err) {
       showToast({
@@ -249,6 +268,7 @@ function AdminProductsPage() {
     } finally {
       setIsImporting(false);
       setImportProgress(0);
+      setImageFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -281,6 +301,14 @@ function AdminProductsPage() {
               className="hidden"
               accept=".xlsx, .xls, .csv"
             />
+            <input
+              type="file"
+              ref={imageFilesInputRef}
+              onChange={handleImageFilesChange}
+              className="hidden"
+              accept="image/*"
+              multiple
+            />
             <a
               href="/bulk_product_upload_sample.xlsx"
               download
@@ -294,6 +322,14 @@ function AdminProductsPage() {
               className="admin-btn-secondary max-sm:w-full !text-[11px]"
             >
               Export CSV
+            </button>
+            <button
+              type="button"
+              onClick={handleImageFilesClick}
+              className="admin-btn-secondary max-sm:w-full !text-[11px]"
+              title="Select product images to attach during bulk import"
+            >
+              {imageFiles.length > 0 ? `${imageFiles.length} Image${imageFiles.length !== 1 ? 's' : ''} Selected` : 'Add Images'}
             </button>
             <button
               type="button"
@@ -369,7 +405,7 @@ function AdminProductsPage() {
                   {displayImage ? (
                     <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[18px] border border-slate-100 bg-white p-1">
                       <img
-                        src={resolveAssetUrl(displayImage) ?? undefined}
+                        src={resolveAssetUrl(typeof displayImage === 'string' ? displayImage : (displayImage?.image || displayImage?.url || displayImage?.image_url)) ?? undefined}
                         alt={product.name}
                         className="h-full w-full object-contain"
                       />

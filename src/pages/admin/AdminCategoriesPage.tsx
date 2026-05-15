@@ -297,7 +297,7 @@ function AdminCategoriesPage() {
               ),
             },
           ]}
-          rows={categories.filter(c => !c.parent)}
+          rows={categories}
           emptyText="No categories available."
           minWidthClassName="min-w-[1000px]"
         />

@@ -36,6 +36,7 @@ function CategoryModal({
   initialParentId = '',
 }: CategoryModalProps) {
   const [name, setName] = useState('');
+  const [descriptionValue, setDescriptionValue] = useState('');
   const [parentId, setParentId] = useState(String(initialParentId || ''));
   const [navbarGroup, setNavbarGroup] = useState('');
   const [isSubcategory, setIsSubcategory] = useState(initialIsSubcategory);
@@ -54,11 +55,13 @@ function CategoryModal({
     if (open) {
       if (category) {
         setName(category.name || '');
+        setDescriptionValue(category.description || '');
         setParentId(String(category.parent || ''));
         setNavbarGroup(category.navbar_group || '');
         setIsSubcategory(!!category.parent);
       } else {
         setName('');
+        setDescriptionValue('');
         setParentId(String(initialParentId || ''));
         setNavbarGroup('');
         setIsSubcategory(initialIsSubcategory);
@@ -119,6 +122,7 @@ function CategoryModal({
 
     const payload: any = {
       name: name.trim(),
+      description: descriptionValue.trim() || null,
     };
 
     if (isSubcategory) {
@@ -177,21 +181,19 @@ function CategoryModal({
         <div className="flex items-center gap-4 rounded-[20px] bg-slate-50 p-4 border border-slate-100">
           <button
             type="button"
-            disabled={!!category} // Don't allow changing type during edit to keep it simple, or allow if needed
             onClick={() => setIsSubcategory(false)}
             className={`flex-1 rounded-xl py-2 text-xs font-bold transition-all ${
               !isSubcategory ? 'bg-white shadow-sm text-primary' : 'text-slate-400 hover:text-slate-600'
-            } ${category ? 'cursor-not-allowed opacity-60' : ''}`}
+            }`}
           >
             Top-level Category
           </button>
           <button
             type="button"
-            disabled={!!category}
             onClick={() => setIsSubcategory(true)}
             className={`flex-1 rounded-xl py-2 text-xs font-bold transition-all ${
               isSubcategory ? 'bg-white shadow-sm text-primary' : 'text-slate-400 hover:text-slate-600'
-            } ${category ? 'cursor-not-allowed opacity-60' : ''}`}
+            }`}
           >
             Subcategory
           </button>
@@ -287,6 +289,20 @@ function CategoryModal({
             required={isRequired('name')}
           />
           {getFieldError('name') && <p className="text-[10px] font-bold text-rose-500 mt-1 pl-1">{getFieldError('name')}</p>}
+        </div>
+
+        <div className="field-stack">
+          <label className="text-sm font-semibold text-slate-700" htmlFor="admin-category-description">
+            Description (Optional)
+          </label>
+          <textarea
+            id="admin-category-description"
+            value={descriptionValue}
+            onChange={(event) => setDescriptionValue(event.target.value)}
+            placeholder="Briefly describe this category for SEO and internal reference..."
+            rows={3}
+            className="admin-control min-h-[100px] resize-none"
+          />
         </div>
       </form>
     </AdminModal>

@@ -326,7 +326,7 @@ export const normalizeProduct = (product: any, catalog: any = {}) => {
 
   // Normalize and resolve URLs, keeping only unique ones
   const seenUrls = new Set<string>();
-  const normalizedImages = sourceList
+  let normalizedImages = sourceList
     .map((img: any) => {
       // Extract URL string from string or various object keys
       const url = typeof img === 'string' ? img : (img?.image_url || img?.image || img?.url || img?.src);
@@ -347,6 +347,13 @@ export const normalizeProduct = (product: any, catalog: any = {}) => {
       return { image: resolved, url: resolved, image_url: resolved };
     })
     .filter(Boolean);
+
+  // Storefront preference: show the first image added (oldest) instead of the last (newest).
+  // We reverse the array for storefront views so the oldest image is at index 0.
+  const isStorefront = typeof window !== 'undefined' && !window.location.pathname.startsWith('/admin');
+  if (isStorefront && normalizedImages.length > 1) {
+    normalizedImages = [...normalizedImages].reverse();
+  }
 
   const primaryImageObj = normalizedImages[0];
   const primaryImageUrl = typeof primaryImageObj === 'string'

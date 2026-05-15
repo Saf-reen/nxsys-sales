@@ -112,7 +112,12 @@ const createInitialForm = (product: Product | null | undefined): FormState => {
     name: product?.name || '',
     brand: String(typeof product?.brand === 'object' ? (product?.brand as { id?: unknown })?.id : product?.brand || ''),
     category: String((typeof product?.category === 'object' ? (product?.category as { id?: unknown })?.id : product?.category) || ''),
-    subcategory: String(product?.subcategoryId || ''),
+    subcategory: String(
+      product?.subcategoryId
+      ?? (product?.subcategoryData as any)?.id
+      ?? (typeof product?.subcategory === 'object' ? (product?.subcategory as any)?.id : product?.subcategory)
+      ?? ''
+    ),
     description: product?.description || '',
     is_active: product ? Boolean(product?.is_active ?? true) : true,
     featured: Boolean(product?.featured),

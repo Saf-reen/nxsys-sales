@@ -27,6 +27,7 @@ interface FormState {
   category: string;
   subcategory: string;
   description: string;
+  is_active: boolean;
   featured: boolean;
   top_selling: boolean;
   new_arrival: boolean;
@@ -113,6 +114,7 @@ const createInitialForm = (product: Product | null | undefined): FormState => {
     category: String((typeof product?.category === 'object' ? (product?.category as { id?: unknown })?.id : product?.category) || ''),
     subcategory: String(product?.subcategoryId || ''),
     description: product?.description || '',
+    is_active: product ? Boolean(product?.is_active ?? true) : true,
     featured: Boolean(product?.featured),
     top_selling: Boolean(product?.top_selling ?? product?.topSelling),
     new_arrival: Boolean(product?.new_arrival ?? product?.isNew),
@@ -516,6 +518,7 @@ const resolvedProductFlags = useMemo(() => {
       category: form.category ? Number(form.category) : null,
       subcategory: form.subcategory ? Number(form.subcategory) : null,
       description: form.description.trim(),
+      is_active: Boolean(form.is_active),
       featured: Boolean(form.featured),
       top_selling: Boolean(form.top_selling),
       new_arrival: Boolean(form.new_arrival),
@@ -1112,6 +1115,28 @@ Premium build quality
             <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400">Visibility</p>
             <h3 className="mt-1 text-lg font-semibold text-slate-950">Flags and listing</h3>
           </div>
+
+          {/* Active / Inactive status toggle */}
+          <div className={`flex items-center justify-between rounded-2xl border-2 px-5 py-4 transition-colors ${form.is_active ? 'border-emerald-200 bg-emerald-50/60' : 'border-slate-200 bg-slate-50'}`}>
+            <div>
+              <p className="text-sm font-bold text-slate-800">Product Status</p>
+              <p className="mt-0.5 text-[11px] text-slate-500">
+                {form.is_active ? 'Visible to customers in the storefront.' : 'Hidden from the storefront.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setForm(current => ({ ...current, is_active: !current.is_active }))}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${form.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`}
+              aria-label={form.is_active ? 'Deactivate product' : 'Activate product'}
+            >
+              <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${form.is_active ? 'translate-x-5' : 'translate-x-0'}`} />
+            </button>
+            <span className={`ml-3 text-[11px] font-black uppercase tracking-widest ${form.is_active ? 'text-emerald-600' : 'text-slate-400'}`}>
+              {form.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+
           <div className="flex flex-wrap gap-4">
             {resolvedProductFlags.map((flag) => (
               <label key={flag.key} className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 transition-colors hover:bg-slate-50">

@@ -166,7 +166,7 @@ function AdminCategoriesPage() {
     <div className="space-y-8">
       <AdminPageHeader
         eyebrow="Taxonomy"
-        title={`Categories (${categories.length})`}
+        title={`Categories (${categories.filter(c => !c.parent).length})`}
         description="Manage top-level catalog groupings and assign each category to the correct navbar section."
         action={
           <button
@@ -297,7 +297,7 @@ function AdminCategoriesPage() {
               ),
             },
           ]}
-          rows={categories}
+          rows={categories.filter(c => !c.parent)}
           emptyText="No categories available."
           minWidthClassName="min-w-[1000px]"
         />

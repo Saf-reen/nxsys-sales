@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Edit2, Star, Trash2, X } from 'lucide-react';
 import AdminModal from './AdminModal';
-import { getTopLevelCategories } from '@/utils/adminUtils';
+import { getTopLevelCategories, getSubcategories } from '@/utils/adminUtils';
 import { createBrand, updateBrand, deleteBrand } from '@/services';
 import { resolveAssetUrl } from '@/services';
 import { showToast } from '@/utils/helpers';
@@ -227,8 +227,8 @@ function ProductEditorModal({
   const topLevelCategories = getTopLevelCategories(categories);
   
   const subcategories = useMemo(
-    () => (form.category ? subcategoriesByCategory[String(form.category)] || [] : []),
-    [form.category, subcategoriesByCategory],
+    () => (form.category ? getSubcategories(categories, form.category) : []),
+    [form.category, categories],
   );
 const resolvedProductFlags = useMemo(() => {
     const allowedFlags = new Map(DEFAULT_PRODUCT_FLAGS.map((flag) => [flag.key, flag]));

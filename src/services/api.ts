@@ -123,6 +123,38 @@ api.interceptors.response.use(
         return Promise.reject(err);
       }
     }
+
+    // Global error notification for submissions (POST, PUT, PATCH, DELETE)
+    const method = axiosError.config?.method?.toLowerCase();
+    const isMutation = ['post', 'put', 'patch', 'delete'].includes(method || '');
+    const skipToast = (axiosError.config as any)?.skipGlobalToast;
+
+    if (!axios.isCancel(axiosError) && !isTokenExpired && isMutation && !skipToast) {
+      showToast({
+        title: 'Submission Error',
+        message: getApiErrorMessage(axiosError),
+        type: 'error'
+      });
+    }
+
+    return Promise.reject(axiosError);
+  }
+);
+
+publicApi.interceptors.response.use(
+  (response) => response,
+  (axiosError) => {
+    const method = axiosError.config?.method?.toLowerCase();
+    const isMutation = ['post', 'put', 'patch', 'delete'].includes(method || '');
+    const skipToast = (axiosError.config as any)?.skipGlobalToast;
+
+    if (!axios.isCancel(axiosError) && isMutation && !skipToast) {
+      showToast({
+        title: 'Submission Error',
+        message: getApiErrorMessage(axiosError),
+        type: 'error'
+      });
+    }
     return Promise.reject(axiosError);
   }
 );

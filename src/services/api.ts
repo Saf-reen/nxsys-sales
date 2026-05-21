@@ -640,6 +640,9 @@ export const catalogApi = {
   }),
   getSimilarProducts: (id: any, cat: any = {}) => publicApi.get(`/products/products/${id}/similar/`).then(res => normalizeProducts(res, cat)),
 
+  getProductSpecifications: (productId: any) =>
+    publicApi.get('/products/specifications/', { params: { product: productId } }).then(unwrapResponse),
+
   createProduct: (payload: any, _catalog?: any) => {
     const built = buildProductPayload(payload);
     return api.post('/products/products/', toFormData(built), {
@@ -774,6 +777,7 @@ export const ordersApi = {
 // --- EXPORTS ---
 export const getProducts = catalogApi.getProducts.bind(catalogApi);
 export const getProductById = catalogApi.getProductById.bind(catalogApi);
+export const getProductSpecifications = catalogApi.getProductSpecifications.bind(catalogApi);
 export const createProduct = catalogApi.createProduct.bind(catalogApi);
 export const updateProduct = catalogApi.updateProduct.bind(catalogApi);
 export const patchProduct = catalogApi.patchProduct.bind(catalogApi);

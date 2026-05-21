@@ -18,14 +18,22 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ open, product
     : [product.product_image || product.image].filter(Boolean);
 
   const specs = product.specification_records || product.specifications || [];
-  
+
   // Group specifications by section
-  const groupedSpecs = Array.isArray(specs) ? specs.reduce<Record<string, any[]>>((acc, s: any) => {
+  const rawGroupedSpecs = Array.isArray(specs) ? specs.reduce<Record<string, any[]>>((acc, s: any) => {
     const section = s.section || s.category || 'General';
     if (!acc[section]) acc[section] = [];
     acc[section].push(s);
     return acc;
   }, {}) : {};
+
+  // Prepend MPN / SKU as an "Identification" section
+  const groupedSpecs: Record<string, any[]> = {};
+  const idItems: any[] = [];
+  if (product.mpn) idItems.push({ key: 'MPN', value: product.mpn });
+  if (product.sku) idItems.push({ key: 'SKU', value: product.sku });
+  if (idItems.length) groupedSpecs['Identification'] = idItems;
+  Object.assign(groupedSpecs, rawGroupedSpecs);
 
   return (
     <AdminModal

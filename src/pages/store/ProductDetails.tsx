@@ -94,6 +94,7 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
     return () => { isMounted = false; };
   }, [brands, categories, product?.id, subcategories]);
 
+
   useEffect(() => {
     if (!product || !Array.isArray(product.frequently_bought_together)) return;
     
@@ -205,6 +206,15 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
   const displayRating = Number(product.rating || 0);
   const stockQty = Number(product.stock ?? -1);
   const inStock = stockQty !== 0;
+
+  const displaySpecifications = (() => {
+    const idItems: { key: string; value: string }[] = [];
+    if (product.mpn) idItems.push({ key: 'MPN', value: String(product.mpn) });
+    if (product.sku) idItems.push({ key: 'SKU', value: String(product.sku) });
+    const existing = Array.isArray(product.specifications) ? product.specifications : [];
+    if (!idItems.length) return existing;
+    return [{ category: 'Identification', items: idItems }, ...existing];
+  })();
 
   const cleanHighlights = (() => {
     const raw = Array.isArray(product.highlights)
@@ -462,7 +472,7 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
           {activeTab === 'reviews' ? (
             <ProductReviews productId={product.id} />
           ) : (
-            <SpecificationsTable specifications={product.specifications} />
+            <SpecificationsTable specifications={displaySpecifications} />
           )}
         </div>
       </div>

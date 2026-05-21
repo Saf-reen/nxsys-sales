@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Package, Shield, Truck, Hash, BarChart, Info } from 'lucide-react';
 import AdminModal from './AdminModal';
-import { resolveAssetUrl } from '@/services';
+import { resolveAssetUrl, getProductSpecifications } from '@/services';
 import type { Product, Category, Subcategory } from '@/types';
 
 interface ProductDetailsModalProps {
@@ -11,19 +11,47 @@ interface ProductDetailsModalProps {
 }
 
 const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ open, product, onClose }) => {
+  const [fetchedSpecs, setFetchedSpecs] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (open && product && product.id) {
+      getProductSpecifications(product.id).then((specs: any) => {
+        let raw = Array.isArray(specs) ? specs : (specs?.results || specs?.items || []);
+        
+        if (raw.length > 0 && (raw[0].specs || raw[0].specifications || raw[0].items)) {
+          const flattened: any[] = [];
+          raw.forEach((group: any) => {
+            const items = group.specs || group.specifications || group.items || [];
+            items.forEach((item: any) => {
+              flattened.push({ ...item, section: group.section || group.category || item.section || 'General' });
+            });
+          });
+          raw = flattened;
+        }
+
+        setFetchedSpecs(raw);
+      }).catch(() => setFetchedSpecs([]));
+    } else {
+      setFetchedSpecs([]);
+    }
+  }, [open, product]);
+
   if (!product) return null;
 
   const images = Array.isArray(product.images) 
     ? product.images 
     : [product.product_image || product.image].filter(Boolean);
 
-  const specs = product.specification_records || product.specifications || [];
+  const specs = fetchedSpecs.length > 0 ? fetchedSpecs : (product.specification_records || product.specifications || []);
 
   // Group specifications by section
   const rawGroupedSpecs = Array.isArray(specs) ? specs.reduce<Record<string, any[]>>((acc, s: any) => {
-    const section = s.section || s.category || 'General';
-    if (!acc[section]) acc[section] = [];
-    acc[section].push(s);
+    const val = typeof s.value === 'string' ? s.value.trim() : s.value;
+    if (val !== undefined && val !== null && val !== '' && val !== '-' && val !== '—') {
+      const section = s.section || s.category || 'General';
+      if (!acc[section]) acc[section] = [];
+      acc[section].push(s);
+    }
     return acc;
   }, {}) : {};
 
@@ -74,22 +102,30 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ open, product
             </div>
 
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stock</p>
-                <p className="mt-1 text-sm font-bold text-slate-900">{product.stock ?? 0} units</p>
-              </div>
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Price</p>
-                <p className="mt-1 text-sm font-bold text-slate-900">₹{product.price || 'N/A'}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">SKU</p>
-                <p className="mt-1 text-sm font-bold text-slate-900 truncate">{product.sku || '—'}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">MPN</p>
-                <p className="mt-1 text-sm font-bold text-slate-900 truncate">{product.mpn || '—'}</p>
-              </div>
+              {product.stock != null && product.stock !== '' && (
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stock</p>
+                  <p className="mt-1 text-sm font-bold text-slate-900">{product.stock} units</p>
+                </div>
+              )}
+              {product.price != null && product.price !== '' && (
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Price</p>
+                  <p className="mt-1 text-sm font-bold text-slate-900">₹{product.price}</p>
+                </div>
+              )}
+              {product.sku && (
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">SKU</p>
+                  <p className="mt-1 text-sm font-bold text-slate-900 truncate">{product.sku}</p>
+                </div>
+              )}
+              {product.mpn && (
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">MPN</p>
+                  <p className="mt-1 text-sm font-bold text-slate-900 truncate">{product.mpn}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -115,15 +151,17 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ open, product
         )}
 
         {/* Description Section */}
-        <section className="space-y-3">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
-            <Info size={16} className="text-slate-400" />
-            <h3 className="text-sm font-bold text-slate-950 uppercase tracking-wider">Description</h3>
-          </div>
-          <div className="prose prose-sm max-w-none text-slate-600 leading-relaxed">
-            {product.description || 'No description available.'}
-          </div>
-        </section>
+        {product.description && (
+          <section className="space-y-3">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+              <Info size={16} className="text-slate-400" />
+              <h3 className="text-sm font-bold text-slate-950 uppercase tracking-wider">Description</h3>
+            </div>
+            <div className="prose prose-sm max-w-none text-slate-600 leading-relaxed">
+              {product.description}
+            </div>
+          </section>
+        )}
 
         {/* Taxonomy Section */}
         <div className="grid gap-6 md:grid-cols-2">
@@ -170,18 +208,31 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ open, product
               <Hash size={16} className="text-slate-400" />
               <h3 className="text-sm font-bold text-slate-950 uppercase tracking-wider">Technical Specifications</h3>
             </div>
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-4">
               {Object.entries(groupedSpecs).map(([section, items]) => (
-                <div key={section} className="space-y-2">
-                  <h4 className="text-[11px] font-black uppercase tracking-widest text-primary/70">{section}</h4>
-                  <div className="divide-y divide-slate-50 rounded-2xl border border-slate-100 bg-white">
-                    {items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between p-3 text-sm">
-                        <span className="text-slate-500">{item.key || item.label}</span>
-                        <span className="font-semibold text-slate-900 text-right">{item.value}</span>
-                      </div>
-                    ))}
+                <div key={section} className="overflow-hidden rounded-xl border border-slate-100 bg-white">
+                  {/* Section header */}
+                  <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-2.5">
+                    <div className="h-3 w-[3px] rounded-full bg-primary" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">{section}</span>
+                    <span className="ml-auto text-[10px] font-bold text-slate-300">{items.length} fields</span>
                   </div>
+                  {/* Rows */}
+                  {(items as any[]).map((item: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className={`flex items-baseline justify-between gap-4 px-4 py-2.5 ${
+                        idx !== items.length - 1 ? 'border-b border-slate-50' : ''
+                      } ${idx % 2 === 1 ? 'bg-slate-50/30' : ''}`}
+                    >
+                      <span className="w-2/5 shrink-0 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                        {item.key || item.label}
+                      </span>
+                      <span className="w-3/5 text-right text-[12px] font-semibold text-slate-800">
+                        {item.value || '—'}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>

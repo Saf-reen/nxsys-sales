@@ -10,6 +10,7 @@ import {
   bulkUploadProducts,
   deleteProduct,
   getProductMetadata,
+  syncProductSpecifications,
 } from '@/services';
 import { showToast } from '@/utils/helpers';
 import AdminDataTable from '@/components/admin/AdminDataTable';
@@ -129,16 +130,28 @@ function AdminProductsPage() {
 
   const handleSave = async (payload) => {
     setSaving(true);
+    const { specifications = [], ...productPayload } = payload;
     try {
+      let savedProduct: any;
       if (activeProduct) {
-        const updatedProduct = await updateProduct(activeProduct.id, payload, { categories, subcategories, brands });
-        setProducts((current) => mergeProductIntoList(current, updatedProduct));
-        showToast({ title: 'Product updated', message: `${updatedProduct.name} was updated.` });
+        savedProduct = await updateProduct(activeProduct.id, productPayload, { categories, subcategories, brands });
+        setProducts((current) => mergeProductIntoList(current, savedProduct));
+        showToast({ title: 'Product updated', message: `${savedProduct.name} was updated.` });
       } else {
-        const createdProduct = await createProduct(payload, { categories, subcategories, brands });
-        setProducts((current) => mergeProductIntoList(current, createdProduct));
-        showToast({ title: 'Product created', message: `${createdProduct.name} was added to the catalog.` });
+        savedProduct = await createProduct(productPayload, { categories, subcategories, brands });
+        setProducts((current) => mergeProductIntoList(current, savedProduct));
+        showToast({ title: 'Product created', message: `${savedProduct.name} was added to the catalog.` });
       }
+
+      // Sync specifications via dedicated endpoint
+      const productId = savedProduct?.id ?? activeProduct?.id;
+      if (productId) {
+        await syncProductSpecifications(productId, specifications).catch(() => {
+          // Spec sync failure is non-fatal — product was saved successfully
+          showToast({ title: 'Specs sync warning', message: 'Product saved but specifications could not be synced.', type: 'warning' });
+        });
+      }
+
       setEditorOpen(false);
       setActiveProduct(null);
       setSaveError(null);

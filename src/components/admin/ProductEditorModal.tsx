@@ -209,6 +209,40 @@ function ProductEditorModal({
     setEditingBrandId(null);
     setSectionBeingRenamed(null);
     setMainImageIndex(null);
+
+    // Fetch existing specifications if editing a product so they aren't lost on save
+    if (open && product && product.id) {
+      import('@/services').then(({ getProductSpecifications }) => {
+        getProductSpecifications(product.id).then((specs: any) => {
+          let raw = Array.isArray(specs) ? specs : (specs?.results || specs?.items || []);
+          
+          // Flatten if it comes grouped
+          if (raw.length > 0 && (raw[0].specs || raw[0].specifications || raw[0].items)) {
+            const flattened: any[] = [];
+            raw.forEach((group: any) => {
+              const items = group.specs || group.specifications || group.items || [];
+              items.forEach((item: any) => {
+                flattened.push({ ...item, section: group.section || group.category || item.section || 'General' });
+              });
+            });
+            raw = flattened;
+          }
+
+          if (raw.length > 0) {
+            setForm((current) => {
+              // Only apply if the form doesn't already have them to avoid overwriting edits
+              if (current.specifications.length === 0 || (current.specifications.length === 1 && !current.specifications[0].key && !current.specifications[0].value)) {
+                return {
+                  ...current,
+                  specifications: raw.map((s: any, i: number) => normalizeSpecification(s, i)),
+                };
+              }
+              return current;
+            });
+          }
+        }).catch(() => {});
+      });
+    }
   }, [product, open]);
 
 
@@ -517,6 +551,15 @@ const resolvedProductFlags = useMemo(() => {
       })),
     ];
 
+    const specifications = form.specifications
+      .filter((s) => s.key.trim() && s.value.trim())
+      .map((s) => ({
+        ...(s.id && !String(s.id).startsWith('temp-') ? { id: Number(s.id) } : {}),
+        section: s.section.trim() || 'General',
+        key: s.key.trim(),
+        value: s.value.trim(),
+      }));
+
     onSubmit({
       name: form.name.trim(),
       brand: brandId,
@@ -532,6 +575,7 @@ const resolvedProductFlags = useMemo(() => {
       highlights: typeof form.highlights === 'string'
         ? form.highlights.trim()
         : '',
+      specifications,
       images,
     });
   };

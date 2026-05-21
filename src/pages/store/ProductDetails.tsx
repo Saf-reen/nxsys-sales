@@ -7,7 +7,7 @@ import SpecificationsTable from '@/components/product/SpecificationsTable';
 import { useProducts } from '@/hooks/useProducts';
 import RequestPriceModal from '@/components/product/RequestPriceModal';
 import placeholder from '@/assets/placeholder.jpg';
-import { getBrandName, getCategoryName, catalogApi as productService, getApiErrorMessage, resolveAssetUrl, authService, rfqIntentService } from '@/services';
+import { getBrandName, getCategoryName, catalogApi as productService, getApiErrorMessage, resolveAssetUrl, authService, rfqIntentService, getProductSpecifications } from '@/services';
 import { slugify, showToast, formatCurrency } from '@/utils';
 import ProductReviews from '@/components/reviews/ProductReviews';
 import { useWishlist } from '@/hooks/useWishlist';
@@ -48,6 +48,7 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
   const [activeTab, setActiveTab] = useState('specifications');
   const [similarProducts, setSimilarProducts] = useState<any[]>([]);
   const [fbtSelected, setFbtSelected] = useState<Set<string>>(new Set());
+  const [fetchedSpecs, setFetchedSpecs] = useState<any[]>([]);
 
   const isAuthenticated = authService.isAuthenticated();
   const wishlist = useWishlist();
@@ -93,6 +94,56 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
     loadSimilarProducts();
     return () => { isMounted = false; };
   }, [brands, categories, product?.id, subcategories]);
+
+  useEffect(() => {
+    if (!product?.id) return;
+    let isMounted = true;
+    getProductSpecifications(product.id, true)
+      .then((data: any) => {
+        if (!isMounted) return;
+        // Normalize whatever grouped format the backend returns into { category, items }[]
+        const raw: any[] = Array.isArray(data)
+          ? data
+          : (data?.results || data?.sections || data?.groups || data?.data || []);
+        if (!raw.length) return;
+
+        let normalized: { category: string; items: { key: string; value: string }[] }[];
+
+        if (raw[0]?.items !== undefined) {
+          // Already in { category, items } shape
+          normalized = raw
+            .map((s: any) => ({
+              category: s.category || s.section || s.name || 'General',
+              items: Array.isArray(s.items) ? s.items : [],
+            }))
+            .filter((s) => s.items.length > 0);
+        } else if (raw[0]?.specifications !== undefined || raw[0]?.specs !== undefined) {
+          // { section, specifications/specs: [...] } shape
+          normalized = raw
+            .map((s: any) => {
+              const itemsList = Array.isArray(s.specifications) ? s.specifications : (Array.isArray(s.specs) ? s.specs : []);
+              return {
+                category: s.section || s.category || s.name || 'General',
+                items: itemsList.map((i: any) => ({ key: i.key || i.name || '', value: i.value ?? '' })),
+              };
+            })
+            .filter((s) => s.items.length > 0);
+        } else {
+          // Flat records: { key, value, section }
+          const grouped: Record<string, { key: string; value: string }[]> = {};
+          raw.forEach((spec: any) => {
+            const section = spec.section || spec.category || 'General';
+            if (!grouped[section]) grouped[section] = [];
+            grouped[section].push({ key: spec.key || spec.name || '', value: spec.value ?? '' });
+          });
+          normalized = Object.entries(grouped).map(([category, items]) => ({ category, items }));
+        }
+
+        if (isMounted) setFetchedSpecs(normalized);
+      })
+      .catch(() => { /* fall back to product.specifications */ });
+    return () => { isMounted = false; };
+  }, [product?.id]);
 
 
   useEffect(() => {
@@ -211,7 +262,26 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
     const idItems: { key: string; value: string }[] = [];
     if (product.mpn) idItems.push({ key: 'MPN', value: String(product.mpn) });
     if (product.sku) idItems.push({ key: 'SKU', value: String(product.sku) });
-    const existing = Array.isArray(product.specifications) ? product.specifications : [];
+
+    // Prefer specs fetched from the dedicated endpoint; fall back to embedded product.specifications
+    const specSource = fetchedSpecs.length > 0
+      ? fetchedSpecs
+      : (Array.isArray(product.specifications) ? product.specifications : []);
+
+    const existing = specSource
+      .map((section: any) => {
+        const validItems = (Array.isArray(section.items) ? section.items : [])
+          .filter((item: any) => {
+            const val = typeof item.value === 'string' ? item.value.trim() : item.value;
+            return val !== undefined && val !== null && val !== '' && val !== '-' && val !== '—';
+          });
+        return {
+          ...section,
+          items: validItems,
+        };
+      })
+      .filter((section: any) => section.items.length > 0);
+
     if (!idItems.length) return existing;
     return [{ category: 'Identification', items: idItems }, ...existing];
   })();
@@ -238,7 +308,7 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
   const frequentlyBoughtProducts = Array.isArray(product?.frequently_bought_together) 
     ? product.frequently_bought_together 
     : [];
-  const selectedFbtProducts = frequentlyBoughtProducts.filter(p => fbtSelected.has(String(p.id)));
+  const selectedFbtProducts = frequentlyBoughtProducts.filter((p: any) => fbtSelected.has(String(p.id)));
   const bundleItems = [product, ...selectedFbtProducts];
   const bundleTotal = bundleItems.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
   const hasBundlePrices = bundleItems.some(p => Number(p.price) > 0);
@@ -311,18 +381,24 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
               </div>
 
               {/* MPN / SKU */}
-              <div className="mt-5 overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/70">
-                <div className="divide-y divide-slate-100">
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">MPN</span>
-                    <span className="text-[13px] font-bold text-slate-800">{product.mpn || '—'}</span>
-                  </div>
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">SKU</span>
-                    <span className="text-[13px] font-bold text-slate-800">{product.sku || '—'}</span>
+              {(product.mpn || product.sku) && (
+                <div className="mt-5 overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/70">
+                  <div className="divide-y divide-slate-100">
+                    {product.mpn && (
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">MPN</span>
+                        <span className="text-[13px] font-bold text-slate-800">{product.mpn}</span>
+                      </div>
+                    )}
+                    {product.sku && (
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">SKU</span>
+                        <span className="text-[13px] font-bold text-slate-800">{product.sku}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Price */}
               {product.price && (

@@ -501,7 +501,8 @@ const cleanSearchParams = (params: any) => {
  *     (backend is append-only; deletion needs a separate endpoint)
  */
 const buildProductPayload = (payload: any) => {
-  const { images, ...rest } = payload ?? {};
+  // specifications are managed via their own endpoint — exclude from product payload
+  const { images, specifications: _specs, ...rest } = payload ?? {};
   const out: any = { ...rest };
 
   if (!Array.isArray(images) || images.length === 0) return out;
@@ -640,8 +641,71 @@ export const catalogApi = {
   }),
   getSimilarProducts: (id: any, cat: any = {}) => publicApi.get(`/products/products/${id}/similar/`).then(res => normalizeProducts(res, cat)),
 
-  getProductSpecifications: (productId: any) =>
-    publicApi.get('/products/specifications/', { params: { product: productId } }).then(unwrapResponse),
+  // GET /products/specifications/?product=<id>&grouped=true
+  getProductSpecifications: (productId: any, grouped = false) =>
+    publicApi.get('/products/specifications/', {
+      params: { product: productId, ...(grouped ? { grouped: 'true' } : {}) },
+    }).then(unwrapResponse),
+
+  createSpecification: (data: any) =>
+    api.post('/products/specifications/', data).then(unwrapResponse),
+
+  deleteSpecification: (id: any) =>
+    api.delete(`/products/specifications/${id}/`).then(unwrapResponse),
+
+  // Use individual deletes since bulk delete endpoint is missing
+  bulkDeleteSpecifications: (ids: number[]) =>
+    Promise.all(ids.map(id => api.delete(`/products/specifications/${id}/`))).then(() => ({ success: true })),
+
+  // Replace all specs for a product: bulk-delete existing, then create new ones.
+  syncProductSpecifications: async (productId: any, specifications: any[]) => {
+    const raw = await publicApi
+      .get('/products/specifications/', { params: { product: productId } })
+      .then(unwrapResponse);
+    const existing: any[] = Array.isArray(raw) ? raw : (raw?.results || []);
+    const existingMap = new Map(existing.map((s: any) => [s.id, s]));
+
+    const specIdsToKeep = new Set();
+    const toDelete: number[] = [];
+    const toUpdate: any[] = [];
+    const toCreate: any[] = [];
+
+    specifications.forEach((spec: any) => {
+      if (spec.id && existingMap.has(spec.id)) {
+        specIdsToKeep.add(spec.id);
+        const ex = existingMap.get(spec.id);
+        if (ex.key !== spec.key || ex.value !== spec.value || (ex.section || 'General') !== (spec.section || 'General')) {
+          toUpdate.push({ ...spec, product: productId });
+        }
+      } else {
+        toCreate.push({ ...spec, product: productId });
+      }
+    });
+
+    existing.forEach((s: any) => {
+      if (!specIdsToKeep.has(s.id)) {
+        toDelete.push(s.id);
+      }
+    });
+
+    if (toDelete.length > 0) {
+      await Promise.all(
+        toDelete.map((id: number) => api.delete(`/products/specifications/${id}/`))
+      );
+    }
+
+    if (toUpdate.length > 0) {
+      await Promise.all(
+        toUpdate.map((spec: any) => api.put(`/products/specifications/${spec.id}/`, spec))
+      );
+    }
+
+    if (toCreate.length > 0) {
+      await Promise.all(
+        toCreate.map((spec: any) => api.post('/products/specifications/', spec))
+      );
+    }
+  },
 
   createProduct: (payload: any, _catalog?: any) => {
     const built = buildProductPayload(payload);
@@ -778,6 +842,10 @@ export const ordersApi = {
 export const getProducts = catalogApi.getProducts.bind(catalogApi);
 export const getProductById = catalogApi.getProductById.bind(catalogApi);
 export const getProductSpecifications = catalogApi.getProductSpecifications.bind(catalogApi);
+export const createSpecification = catalogApi.createSpecification.bind(catalogApi);
+export const deleteSpecification = catalogApi.deleteSpecification.bind(catalogApi);
+export const bulkDeleteSpecifications = catalogApi.bulkDeleteSpecifications.bind(catalogApi);
+export const syncProductSpecifications = catalogApi.syncProductSpecifications.bind(catalogApi);
 export const createProduct = catalogApi.createProduct.bind(catalogApi);
 export const updateProduct = catalogApi.updateProduct.bind(catalogApi);
 export const patchProduct = catalogApi.patchProduct.bind(catalogApi);

@@ -102,13 +102,13 @@ const ProductDetailsModal: React.FC<ProductDetailsModalProps> = ({ open, product
             </div>
 
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {product.stock != null && product.stock !== '' && (
+              {product.stock != null && String(product.stock).trim() !== '' && (
                 <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Stock</p>
                   <p className="mt-1 text-sm font-bold text-slate-900">{product.stock} units</p>
                 </div>
               )}
-              {product.price != null && product.price !== '' && (
+              {product.price != null && String(product.price).trim() !== '' && (
                 <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Price</p>
                   <p className="mt-1 text-sm font-bold text-slate-900">₹{product.price}</p>

@@ -147,8 +147,8 @@ function ProductGallery({ images = [] as any[], alt = 'Product image' }: { image
           />
         </div>
 
-        {/* Lens rectangle */}
-        {lens && (
+        {/* Lens rectangle — only shows alongside the side panel */}
+        {lens && zoomStyle && (
           <div
             className="absolute pointer-events-none"
             style={{
@@ -162,6 +162,26 @@ function ProductGallery({ images = [] as any[], alt = 'Product image' }: { image
             }}
           />
         )}
+
+        {/* Inline zoom overlay — fallback when side panel won't fit (mobile, tablet, narrow desktop) */}
+        {lens && !zoomStyle && (() => {
+          const maxLensX = Math.max(lens.containerW * (1 - LENS_FRACTION), 1);
+          const maxLensY = Math.max(lens.containerH * (1 - LENS_FRACTION), 1);
+          const bgX = (lens.x / maxLensX) * 100;
+          const bgY = (lens.y / maxLensY) * 100;
+          return (
+            <div
+              className="absolute inset-0 z-10 pointer-events-none"
+              style={{
+                backgroundImage: `url(${resolvedImage})`,
+                backgroundPosition: `${bgX}% ${bgY}%`,
+                backgroundSize: `${ZOOM_FACTOR * 100}%`,
+                backgroundRepeat: 'no-repeat',
+                backgroundColor: 'white',
+              }}
+            />
+          );
+        })()}
 
         {/* Mobile dot indicators */}
         {galleryImages.length > 1 && (

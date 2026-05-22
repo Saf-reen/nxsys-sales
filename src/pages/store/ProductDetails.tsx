@@ -320,26 +320,21 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50/40 pb-24">
+    <div className="min-h-screen bg-slate-50/40 pb-28 md:pb-24">
       <Breadcrumbs items={breadcrumbItems} />
 
-      <div className="container-shell mt-6 sm:mt-10 lg:mt-12">
-        {/* ── 2-col layout ── */}
-        <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
+      <div className="container-shell mt-4 sm:mt-8 lg:mt-12">
+        {/* ── 2-col layout: starts at md (tablet) ── */}
+        <div className="grid gap-6 md:grid-cols-[1fr_1fr] md:gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
 
           {/* Gallery */}
           <div className="flex flex-col">
             <ProductGallery images={galleryImages} alt={product.name} />
-            
-            {/* Additional info below gallery if needed */}
-            <div className="mt-8 hidden lg:block">
-               {/* Amazon often has some promo or info here, leaving as placeholder for future */}
-            </div>
           </div>
 
           {/* Right panel */}
           <div className="flex flex-col gap-6">
-            <div className="rounded-[32px] border border-slate-200/80 bg-white p-6 shadow-[0_8px_40px_rgba(15,23,42,0.07)] sm:p-8 lg:sticky lg:top-24">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:rounded-[32px] sm:p-6 md:sticky md:top-6 md:self-start md:shadow-[0_8px_40px_rgba(15,23,42,0.07)] lg:top-8 lg:p-8">
 
               {/* Brand + stock */}
               <div className="flex items-center justify-between gap-3">
@@ -357,7 +352,7 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
               </div>
 
               {/* Product name */}
-              <h1 className="mt-3 text-[26px] font-black leading-tight tracking-tight text-textMain sm:text-3xl">
+              <h1 className="mt-3 text-xl font-black leading-tight tracking-tight text-textMain sm:text-[26px] md:text-2xl lg:text-3xl">
                 {product.name}
               </h1>
 
@@ -402,9 +397,9 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
 
               {/* Price */}
               {product.price && (
-                <div className="mt-6 flex items-baseline justify-between rounded-2xl border border-primary/20 bg-primary/5 px-6 py-5">
-                  <span className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500">Best Price</span>
-                  <span className="text-3xl font-black tracking-tighter text-textMain sm:text-4xl">
+                <div className="mt-4 flex items-baseline justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 sm:mt-6 sm:rounded-2xl sm:px-6 sm:py-5">
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Best Price</span>
+                  <span className="text-2xl font-black tracking-tighter text-textMain sm:text-3xl lg:text-4xl">
                     {formatCurrency(product.price)}
                   </span>
                 </div>
@@ -427,8 +422,8 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
                 </div>
               )}
 
-              {/* Quantity + CTAs */}
-              <div className="mt-7 space-y-4 border-t border-slate-100 pt-7">
+              {/* Quantity + CTAs — hidden on mobile (see sticky bar below), visible md+ */}
+              <div className="mt-5 hidden space-y-3 border-t border-slate-100 pt-5 md:block md:mt-7 md:space-y-4 md:pt-7">
                 {/* Quantity */}
                 <div className="flex items-center gap-4">
                   <span className="text-[11px] font-black uppercase tracking-widest text-slate-500">Qty</span>
@@ -493,12 +488,12 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
 
         {/* ── Description ── */}
         {product.description && (
-          <div className="mt-14">
-            <div className="mb-5 flex items-center gap-3">
+          <div className="mt-8 sm:mt-14">
+            <div className="mb-4 flex items-center gap-3 sm:mb-5">
               <div className="h-1 w-5 rounded-full bg-primary" />
-              <h2 className="text-xl font-black tracking-tight text-textMain sm:text-2xl">About This Product</h2>
+              <h2 className="text-lg font-black tracking-tight text-textMain sm:text-xl md:text-2xl">About This Product</h2>
             </div>
-            <div className="rounded-[28px] border border-slate-200/80 bg-white p-7 shadow-[0_4px_24px_rgba(15,23,42,0.06)] sm:p-10">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm sm:rounded-[28px] sm:p-7 sm:shadow-[0_4px_24px_rgba(15,23,42,0.06)] md:p-10">
               {typeof product.description === 'string' ? (
                 product.description.split('\n').filter((p: any) => p.trim()).length === 1 ? (
                   <p className="text-[15px] font-medium leading-8 text-slate-600">
@@ -525,21 +520,21 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
       </div>
 
       {/* ── Specs / Reviews tabs ── */}
-      <div className="container-shell mt-14 lg:mt-20">
-        <div className="mb-8 border-b border-slate-200">
-          <div className="flex gap-2">
+      <div className="container-shell mt-8 sm:mt-14 lg:mt-20">
+        <div className="mb-5 border-b border-slate-200 sm:mb-8">
+          <div className="flex gap-1 sm:gap-2">
             {['specifications', 'reviews'].map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`mb-[-1px] rounded-t-xl px-6 pb-4 pt-3 text-[11px] font-black uppercase tracking-[0.24em] transition-all ${
+                className={`mb-[-1px] rounded-t-xl px-4 pb-3 pt-2.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all sm:px-6 sm:pb-4 sm:pt-3 sm:text-[11px] ${
                   activeTab === tab
                     ? 'border border-b-white border-slate-200 bg-white text-textMain'
                     : 'text-slate-400 hover:text-slate-700'
                 }`}
               >
-                {tab === 'specifications' ? 'Specifications' : 'Customer Reviews'}
+                {tab === 'specifications' ? 'Specifications' : 'Reviews'}
               </button>
             ))}
           </div>
@@ -725,6 +720,54 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
           </div>
         </div>
       )}
+
+      {/* ── Sticky bottom bar — mobile only ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-sm md:hidden">
+        <div className="flex items-center gap-3">
+          {/* Qty stepper */}
+          <div className="flex h-11 shrink-0 items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+            <button
+              type="button"
+              onClick={() => setQuantity(q => Math.max(1, q - 1))}
+              className="flex h-11 w-10 items-center justify-center text-xl font-black text-slate-400 transition-colors active:bg-slate-100"
+            >
+              −
+            </button>
+            <span className="w-9 text-center text-[15px] font-black text-slate-900">{quantity}</span>
+            <button
+              type="button"
+              onClick={() => setQuantity(q => q + 1)}
+              className="flex h-11 w-10 items-center justify-center text-xl font-black text-slate-400 transition-colors active:bg-slate-100"
+            >
+              +
+            </button>
+          </div>
+
+          {/* Primary CTA */}
+          <button
+            type="button"
+            onClick={handleRequestPrice}
+            className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-textMain px-4 text-[12px] font-black uppercase tracking-wider text-white active:scale-[0.98]"
+          >
+            <MessageSquare size={16} className="text-primary" />
+            Get Price Quote
+          </button>
+
+          {/* Wishlist icon */}
+          <button
+            type="button"
+            onClick={handleWishlistToggle}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 transition-all active:scale-[0.98] ${
+              isWishlisted
+                ? 'border-primary bg-primary text-textMain'
+                : 'border-slate-200 bg-white text-slate-500'
+            }`}
+            aria-label={isWishlisted ? 'Remove from wishlist' : 'Save to wishlist'}
+          >
+            <Heart size={18} className={isWishlisted ? 'fill-textMain' : ''} />
+          </button>
+        </div>
+      </div>
 
       {/* RFQ Modal */}
       <RequestPriceModal

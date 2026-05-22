@@ -2,8 +2,8 @@ import { memo } from 'react';
 import { ShieldCheck, Zap, PackageCheck, Headphones } from 'lucide-react';
 
 const STATS = [
-  { value: '500+', label: 'OEM Brands' },
-  { value: '10K+', label: 'Active SKUs' },
+  { value: '25+', label: 'OEM Brands' },
+  { value: '1000+', label: 'Active SKUs' },
   { value: '48hr', label: 'Avg. Fulfillment' },
   { value: '100%', label: 'Genuine Stock' },
 ];

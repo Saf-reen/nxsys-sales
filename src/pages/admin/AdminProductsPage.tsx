@@ -131,7 +131,10 @@ function AdminProductsPage() {
 
   const handleSave = async (payload) => {
     setSaving(true);
-    const { specifications = [], images = [], ...productPayload } = payload;
+    // Keep `images` inside productPayload so buildProductPayload can process new file uploads.
+    // Read it separately only for deletion diffing.
+    const { specifications = [], ...productPayload } = payload;
+    const images: any[] = Array.isArray(payload.images) ? payload.images : [];
     try {
       let savedProduct: any;
       if (activeProduct) {

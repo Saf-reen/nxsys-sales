@@ -40,7 +40,7 @@ const MarketplacePulseChart = ({ counts, inventory, customers, wishlists }: { co
     { label: 'Stock',      val: inventory.total_stock_items || 0, from: '#34d399', to: '#047857' },
     { label: 'Wishlists',  val: wishlists.total_wishlists || 0, from: '#fb7185', to: '#be123c' },
     { label: 'Customers',  val: customers.total_users   || 0, from: '#c084fc', to: '#6d28d9' },
-    { label: 'Requests',   val: counts.total_requests   || 0, from: '#fbbf24', to: '#b45309' },
+    { label: 'Requests',   val: counts.total_requests   || 0, from: '#fbc61d', to: '#b45309' },
   ];
   const svgW = 580, svgH = 210, padL = 40, padR = 12, padT = 28, padB = 34;
   const chartW = svgW - padL - padR, chartH = svgH - padT - padB;
@@ -130,7 +130,7 @@ const Kpi = ({
     slate: 'bg-slate-100 text-slate-500',
     emerald: 'bg-emerald-50 text-emerald-600',
     blue: 'bg-blue-50 text-blue-600',
-    amber: 'bg-amber-50 text-amber-600',
+    amber: 'bg-primary/10 text-primary',
     rose: 'bg-rose-50 text-rose-600',
     violet: 'bg-violet-50 text-violet-600',
   };
@@ -163,7 +163,7 @@ const StarBar = ({ label, count, total }: { label: string; count: number; total:
     <div className="flex items-center gap-2.5">
       <span className="w-6 shrink-0 text-right text-[11px] font-bold text-slate-500">{label}</span>
       <div className="flex-1 overflow-hidden rounded-full bg-slate-100" style={{ height: 6 }}>
-        <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
       </div>
       <span className="w-7 shrink-0 text-right text-[11px] font-bold text-slate-400">{count}</span>
     </div>
@@ -271,10 +271,10 @@ function AdminDashboardPage() {
         </div>
         <div className="relative flex flex-col justify-between overflow-hidden rounded-[24px] border border-white/[0.06] p-5 text-white"
           style={{ background: 'linear-gradient(150deg,#0d1117 0%,#090e1a 100%)', boxShadow: '0 0 0 1px rgba(255,255,255,0.04),0 28px 60px rgba(0,0,0,0.4)', minHeight: 280 }}>
-          <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 55% at 50% -10%,rgba(250,204,21,0.1) 0%,transparent 70%)' }} />
+          <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 55% at 50% -10%,rgba(251,198,29,0.1) 0%,transparent 70%)' }} />
           <div className="pointer-events-none absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle,rgba(255,255,255,0.035) 1px,transparent 1px)', backgroundSize: '20px 20px' }} />
           <div className="relative">
-            <Zap className="mb-3 text-yellow-400" size={20} />
+            <Zap className="mb-3 text-primary" size={20} />
             <p className="mb-1 text-[9px] font-black uppercase tracking-[0.35em] text-slate-500">Daily Momentum</p>
             <p className="text-[44px] font-black leading-none tabular-nums text-white">{customers.active_today || 0}</p>
             <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Active Users Today</p>
@@ -384,7 +384,7 @@ function AdminDashboardPage() {
         <div className="surface-panel p-5">
           <div className="mb-5 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <BarChart2 size={15} className="text-amber-500" />
+              <BarChart2 size={15} className="text-primary" />
               <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-700">Review Breakdown</h3>
             </div>
             <div className="text-right">
@@ -409,7 +409,7 @@ function AdminDashboardPage() {
         <div className="surface-panel p-5">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Star size={15} className="text-amber-500" />
+              <Star size={15} className="text-primary" />
               <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-700">Top Rated Products</h3>
             </div>
             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">By Rating</span>
@@ -418,11 +418,11 @@ function AdminDashboardPage() {
             <div className="space-y-2">
               {topRated.map((item: any, i: number) => (
                 <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 px-4 py-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-[10px] font-black text-amber-600">#{i + 1}</span>
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-[10px] font-black text-primary">#{i + 1}</span>
                   <p className="min-w-0 flex-1 truncate text-[13px] font-semibold text-slate-800">{item.name}</p>
                   <div className="flex items-center gap-1">
                     <Star size={11} className="fill-amber-400 text-amber-400" />
-                    <span className="text-[11px] font-black text-amber-600">{item.rating || '5.0'}</span>
+                    <span className="text-[11px] font-black text-primary">{item.rating || '5.0'}</span>
                   </div>
                 </div>
               ))}
@@ -494,7 +494,7 @@ function AdminDashboardPage() {
                 render: (row) => {
                   const stock = Number(row.stock || 0);
                   return (
-                    <span className={`inline-flex rounded-lg border px-2.5 py-1 text-[11px] font-black ${stock === 0 ? 'border-rose-200 bg-rose-50 text-rose-600' : 'border-amber-200 bg-amber-50 text-amber-600'}`}>
+                    <span className={`inline-flex rounded-lg border px-2.5 py-1 text-[11px] font-black ${stock === 0 ? 'border-rose-200 bg-rose-50 text-rose-600' : 'border-primary/20 bg-primary/10 text-primary'}`}>
                       {stock === 0 ? 'Out' : stock}
                     </span>
                   );

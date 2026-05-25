@@ -23,7 +23,7 @@ const hasRenderableProductData = (candidate: any) =>
 const TRUST_BADGES = [
   { Icon: ShieldCheck, label: 'Verified Seller',  color: 'text-emerald-500', bg: 'bg-emerald-50' },
   { Icon: Truck,       label: 'Quick Dispatch',   color: 'text-blue-500',    bg: 'bg-blue-50'    },
-  { Icon: BadgeCheck,  label: 'Genuine Product',  color: 'text-amber-500',   bg: 'bg-amber-50'   },
+  { Icon: BadgeCheck,  label: 'Genuine Product',  color: 'text-primary',     bg: 'bg-primary/10' },
 ];
 
 function ProductDetails({ productIdOverride = null }: { productIdOverride?: any }) {

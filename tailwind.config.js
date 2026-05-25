@@ -21,7 +21,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Poppins', 'Roboto', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'sans-serif'],
       },
       letterSpacing: {
         'lumio-ui': '1px', // Less flashy

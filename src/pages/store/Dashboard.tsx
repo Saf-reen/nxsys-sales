@@ -123,7 +123,7 @@ function CustomerDashboard() {
       case 'closed':
         return 'text-rose-700 bg-rose-50 border-rose-100';
       case 'pending':
-        return 'text-amber-700 bg-amber-50 border-amber-100';
+        return 'text-primary bg-primary/10 border-primary/20';
       default:
         return 'text-slate-600 bg-slate-50 border-slate-100';
     }
@@ -151,7 +151,7 @@ function CustomerDashboard() {
       label: 'Pending',
       value: stats.pending,
       helper: 'Requests waiting for your account manager to respond.',
-      valueClassName: 'text-amber-600',
+      valueClassName: 'text-primary',
     },
     {
       label: 'Quoted',

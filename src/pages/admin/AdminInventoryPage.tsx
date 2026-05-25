@@ -133,9 +133,9 @@ function AdminInventoryPage() {
               {inventoryStats.out_of_stock ?? inventory.filter(i => (i.stock || 0) === 0).length}
             </p>
           </div>
-          <div className="surface-panel p-5 border-l-4 border-l-amber-500">
+          <div className="surface-panel p-5 border-l-4 border-l-primary">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Low Stock Alert</p>
-            <p className="mt-1 text-2xl font-black text-amber-600">
+            <p className="mt-1 text-2xl font-black text-primary">
               {inventoryStats.low_stock ?? inventory.filter(i => (i.stock || 0) > 0 && (i.stock || 0) <= 10).length}
             </p>
           </div>

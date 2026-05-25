@@ -11,6 +11,7 @@ import {
   deleteProduct,
   getProductMetadata,
   syncProductSpecifications,
+  deleteProductImage,
 } from '@/services';
 import { showToast } from '@/utils/helpers';
 import AdminDataTable from '@/components/admin/AdminDataTable';
@@ -130,13 +131,30 @@ function AdminProductsPage() {
 
   const handleSave = async (payload) => {
     setSaving(true);
-    const { specifications = [], ...productPayload } = payload;
+    const { specifications = [], images = [], ...productPayload } = payload;
     try {
       let savedProduct: any;
       if (activeProduct) {
+        // Compute which existing image IDs were removed by the user
+        const originalIds = (Array.isArray(activeProduct.images) ? activeProduct.images : [])
+          .map((img: any) => img?.id)
+          .filter(Boolean)
+          .map(String);
+        const keptIds = new Set(
+          images
+            .filter((img: any) => img.id && !(img.image instanceof File))
+            .map((img: any) => String(img.id))
+        );
+        const deletedIds = originalIds.filter((id) => !keptIds.has(id));
+
         savedProduct = await updateProduct(activeProduct.id, productPayload, { categories, subcategories, brands });
         setProducts((current) => mergeProductIntoList(current, savedProduct));
         showToast({ title: 'Product updated', message: `${savedProduct.name} was updated.` });
+
+        // Delete removed images (non-fatal)
+        if (deletedIds.length > 0) {
+          await Promise.allSettled(deletedIds.map((id) => deleteProductImage(id)));
+        }
       } else {
         savedProduct = await createProduct(productPayload, { categories, subcategories, brands });
         setProducts((current) => mergeProductIntoList(current, savedProduct));

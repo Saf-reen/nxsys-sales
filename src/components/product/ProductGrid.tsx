@@ -1,21 +1,7 @@
-import { memo, useRef } from 'react';
+import { memo } from 'react';
 import ProductCard from './ProductCard';
 
 function ProductGrid({ products, viewMode = 'grid' }) {
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const hoverTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
-
-  const handleMouseEnter = (index: number) => {
-    hoverTimers.current[index] = setTimeout(() => {
-      const next = cardRefs.current[index + 1];
-      if (next) next.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 350);
-  };
-
-  const handleMouseLeave = (index: number) => {
-    clearTimeout(hoverTimers.current[index]);
-  };
-
   if (!products.length) {
     return (
       <div className="bg-white border border-greyBorder p-12 text-center card-b2b">
@@ -35,13 +21,8 @@ function ProductGrid({ products, viewMode = 'grid' }) {
           : 'grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-4 lg:grid-cols-4'
       }
     >
-      {products.map((product, index) => (
-        <div
-          key={product.id}
-          ref={(el) => { cardRefs.current[index] = el; }}
-          onMouseEnter={() => handleMouseEnter(index)}
-          onMouseLeave={() => handleMouseLeave(index)}
-        >
+      {products.map((product) => (
+        <div key={product.id}>
           <ProductCard product={product} viewMode={viewMode} />
         </div>
       ))}

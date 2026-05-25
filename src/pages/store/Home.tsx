@@ -61,7 +61,7 @@ const buildProductCard = (product: any, categories: any[] = []) => {
     productType: normalizeText(product.subcategory) || categoryName || 'Product',
     mpn: product.mpn || product.model_number || product.model || '--',
     sku: product.sku || product.sku_code || product.item_code || '--',
-    image: product.image || product.product_image || (Array.isArray(product.images) ? product.images[0] : '') || placeholder,
+    image: product.product_image || product.image || (Array.isArray(product.images) ? (product.images.find((img: any) => img.is_main)?.image_url || product.images[0]?.image_url) : '') || placeholder,
     images: product.images || [],
     isNew: Boolean(product.isNew || product.featured),
   };

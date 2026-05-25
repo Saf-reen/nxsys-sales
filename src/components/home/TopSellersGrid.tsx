@@ -1,4 +1,4 @@
-import { memo, useRef } from 'react';
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import HomeProductCard from './HomeProductCard';
@@ -12,19 +12,6 @@ function TopSellersGrid({
   loading?: boolean;
   error?: string;
 }) {
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const hoverTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
-
-  const handleMouseEnter = (index: number) => {
-    hoverTimers.current[index] = setTimeout(() => {
-      const next = cardRefs.current[index + 1];
-      if (next) next.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 350);
-  };
-
-  const handleMouseLeave = (index: number) => {
-    clearTimeout(hoverTimers.current[index]);
-  };
   const SectionHeader = () => (
     <div className="flex flex-col gap-5 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between sm:gap-6 sm:pb-8">
       <div className="max-w-xl">
@@ -79,13 +66,8 @@ function TopSellersGrid({
       <div className="container-shell space-y-8 sm:space-y-10">
         <SectionHeader />
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {products.map((product, index) => (
-            <div
-              key={product.id || product.sku}
-              ref={(el) => { cardRefs.current[index] = el; }}
-              onMouseEnter={() => handleMouseEnter(index)}
-              onMouseLeave={() => handleMouseLeave(index)}
-            >
+          {products.map((product) => (
+            <div key={product.id || product.sku}>
               <HomeProductCard product={product} />
             </div>
           ))}

@@ -4,11 +4,13 @@ import { getBrandName, getCategoryName } from '@/services';
 import { useProducts } from '@/hooks/useProducts';
 import HeroBanner from '@/components/home/HeroBanner';
 import TopSellersGrid from '@/components/home/TopSellersGrid';
-
+import CategoryCarousel, { type CarouselVariant } from '@/components/home/CategoryCarousel';
 import CategoryBrandStrip from '@/components/home/CategoryBrandStrip';
 import WhyChooseUs from '@/components/home/WhyChooseUs';
 
 import { categoryBrandStrip as showcaseCategoryBrandStrip, heroSlides } from '@/utils';
+
+const CAROUSEL_VARIANTS: CarouselVariant[] = ['light', 'dark', 'tinted', 'slate'];
 
 const normalizeText = (value: any) => String(value || '').trim();
 
@@ -79,6 +81,26 @@ function Home() {
     return sourceProducts.slice(0, 4).map((product: any) => buildProductCard(product, categories));
   }, [topSellingProducts, products, categories]);
 
+  // Group products by category, sorted by count descending, max 6 categories
+  const categoryCarousels = useMemo(() => {
+    if (!Array.isArray(products) || !products.length) return [];
+    const grouped: Record<string, any[]> = {};
+    products.forEach((product: any) => {
+      const catName = getCategoryName(product.category, categories);
+      if (!catName) return;
+      if (!grouped[catName]) grouped[catName] = [];
+      grouped[catName].push(buildProductCard(product, categories));
+    });
+    return Object.entries(grouped)
+      .filter(([, items]) => items.length >= 1)
+      .sort(([, a], [, b]) => b.length - a.length)
+      .map(([catName, items], idx) => ({
+        category: catName,
+        products: items.slice(0, 12),
+        variant: CAROUSEL_VARIANTS[idx % CAROUSEL_VARIANTS.length],
+      }));
+  }, [products, categories]);
+
   const categoryBrandStrip = useMemo(() => {
     const logoByBrand = new Map(
       showcaseCategoryBrandStrip.brands.map((brand) => [normalizeText(brand.name).toLowerCase(), brand]),
@@ -116,9 +138,17 @@ function Home() {
       <HeroBanner slides={heroSlides} />
       <TopSellersGrid products={topSellers} loading={loading} error={error || undefined} />
 
+      {categoryCarousels.map(({ category, products: catProducts, variant }) => (
+        <CategoryCarousel
+          key={category}
+          category={category}
+          products={catProducts}
+          variant={variant}
+        />
+      ))}
+
       <CategoryBrandStrip data={categoryBrandStrip} />
       <WhyChooseUs />
-
     </main>
   );
 }

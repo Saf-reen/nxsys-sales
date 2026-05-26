@@ -369,10 +369,10 @@ export const normalizeProduct = (product: any, catalog: any = {}) => {
 
       // If it was an object, return a clean version with resolved fields
       if (typeof img === 'object' && img !== null) {
-        return { 
-          ...img, 
-          image: resolved, 
-          url: resolved, 
+        return {
+          ...img,
+          image: resolved,
+          url: resolved,
           image_url: resolved // Ensure all common keys are resolved
         };
       }
@@ -569,6 +569,20 @@ export const authService = {
   verifyAdminAccess: async () => authSessionStorage.getUser(),
 };
 
+const fetchAllPages = async (client: AxiosInstance, url: string, params: any = {}) => {
+  const items: any[] = [];
+  let nextUrl: string | null = url;
+  while (nextUrl) {
+    const res: any = await client.get(nextUrl, { params: items.length === 0 ? params : {} });
+    items.push(...extractList(res));
+    const data = unwrapResponse(res);
+    nextUrl = data?.next
+      ? new URL(data.next).pathname.replace('/api', '') + new URL(data.next).search
+      : null;
+  }
+  return items;
+};
+
 export const catalogApi = {
   getCatalogData: async () => {
     const [catsRes, brandsRes] = await Promise.all([
@@ -632,7 +646,9 @@ export const catalogApi = {
       categoryTree
     };
   },
-  getProducts: (params: any = {}, cat: any = {}) => publicApi.get('/products/products/', { params: cleanSearchParams(params) }).then(res => normalizeProducts(res, cat)),
+  getProducts: (params: any = {}, cat: any = {}) =>
+    fetchAllPages(publicApi, '/products/products/', cleanSearchParams(params))
+      .then(allProducts => allProducts.map((p: any) => normalizeProduct(p, cat)).filter(Boolean)),
   getProductById: (id: any, cat: any = {}) => publicApi.get(`/products/products/${id}/`).then(res => {
     const data = unwrapResponse(res);
     if (!data) return null;

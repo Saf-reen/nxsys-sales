@@ -48,7 +48,6 @@ function FilterOption({ option, isChecked, onToggle }) {
           {option.label}
         </span>
       </div>
-      <span className="shrink-0 text-[11px] font-semibold text-slate-400">({option.count})</span>
     </label>
   );
 }

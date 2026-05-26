@@ -49,9 +49,7 @@ function HomeProductCard({ product }) {
       <div className="flex flex-1 flex-col gap-2.5 p-3.5 sm:p-4">
         {/* Brand + type row */}
         <div className="flex items-center justify-between gap-1 min-w-0">
-          <span className="truncate text-[10px] font-black uppercase tracking-wider text-primary">
-            {product.brandName || product.brand || '—'}
-          </span>
+          {(() => { const b = product.brandName || (isNaN(Number(product.brand)) ? product.brand : '') || ''; return b ? <span className="truncate text-[10px] font-black uppercase tracking-wider text-primary">{b}</span> : null; })()}
           <span className="shrink-0 text-[10px] font-semibold text-slate-400">
             {product.category || product.productType || ''}
           </span>
@@ -62,15 +60,12 @@ function HomeProductCard({ product }) {
           {product.name}
         </h4>
 
-        {/* MPN / SKU */}
-        <div className="mt-auto rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
-          <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1.5">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">MPN</span>
-            <span className="truncate text-right text-[10px] font-semibold text-slate-700">{product.mpn || 'N/A'}</span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">SKU</span>
-            <span className="truncate text-right text-[10px] font-semibold text-slate-700">{product.sku || 'N/A'}</span>
-          </div>
-        </div>
+        {/* Description */}
+        {(product.description || product.short_description) ? (
+          <p className="mt-auto line-clamp-2 text-[11px] leading-relaxed text-slate-500">
+            {product.description || product.short_description}
+          </p>
+        ) : null}
 
         {/* CTA */}
         <div className="flex min-h-[40px] w-full items-center justify-between rounded-xl bg-textMain px-4 text-[10px] font-black uppercase tracking-[0.14em] text-white transition-all duration-200 group-hover:bg-primary group-hover:text-textMain sm:min-h-[42px]">

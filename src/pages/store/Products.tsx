@@ -173,6 +173,10 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
   }, [filters, debouncedSearch, sortBy]);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
+  useEffect(() => {
     let isMounted = true;
     const query = debouncedSearch.trim();
 
@@ -229,7 +233,7 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
           getSpecificationValue(product, ['colour', 'color']) || '';
         const operatingSystemValue =
           getSpecificationValue(product, ['operating_system', 'os']) || '';
-          
+
         const brandValue = toDisplayValue(product.brandName || getBrandName(product.brand, brands));
         const name = toDisplayValue(product.name);
         const mpn = toDisplayValue(product.mpn) || 'N/A';
@@ -583,199 +587,201 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
 
       <div className="container-shell pb-8 pt-8 sm:pb-16 lg:pb-20">
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-        {showMobileFilters ? (
-          <button
-            type="button"
-            className="fixed inset-0 z-[39] bg-black/45 backdrop-blur-[1px] lg:hidden"
-            onClick={() => setShowMobileFilters(false)}
-            aria-label="Close filters"
-          />
-        ) : null}
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+          {showMobileFilters ? (
+            <button
+              type="button"
+              className="fixed inset-0 z-[39] bg-black/45 backdrop-blur-[1px] lg:hidden"
+              onClick={() => setShowMobileFilters(false)}
+              aria-label="Close filters"
+            />
+          ) : null}
 
-        <div
-          className={`fixed inset-y-0 left-0 z-[40] w-[min(88vw,340px)] bg-white transition-transform duration-300 lg:sticky lg:top-6 lg:z-auto lg:w-[280px] lg:self-start lg:bg-transparent xl:w-[300px] ${showMobileFilters ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-            }`}
-        >
-          <div className="flex h-full flex-col">
-            <div className="flex items-center justify-between border-b border-black/10 bg-primary px-5 py-4 lg:hidden">
-              <span className="text-[13px] font-black uppercase tracking-widest text-textMain">Filters</span>
-              <button
-                type="button"
-                onClick={() => setShowMobileFilters(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-xl bg-black/10 text-textMain transition-colors hover:bg-black/20"
-                aria-label="Close filters"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div className="h-full overflow-y-auto p-6 lg:p-0">
-              <FilterSidebar
-                sections={filterSections as any}
-                filters={filters}
-                totalResults={filteredEntries.length}
-                onToggleOption={handleToggleFilter}
-                onReset={resetFilters}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="mb-6 border-b border-slate-200 pb-6 sm:mb-8 sm:pb-8">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold text-slate-400">{filteredEntries.length} result{filteredEntries.length !== 1 ? 's' : ''}</p>
-                <h1 className="mt-1.5 text-2xl font-black tracking-tight text-textMain sm:mt-2 sm:text-3xl md:text-4xl">
-                  {activeSubcategoryLabel || activeCategoryLabel || 'Global Catalog'}
-                </h1>
-              </div>
-
-              <div className="flex flex-col gap-4 lg:shrink-0 lg:items-end">
-                <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
-                  {/* Search */}
-                  <div className="relative w-full sm:max-w-[320px] sm:flex-1 lg:w-[280px] lg:flex-none xl:w-[320px]">
-                    <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search by name, SKU, or specs…"
-                      value={searchTerm}
-                      onChange={(event) => {
-                        startTransition(() => {
-                          setSearchTerm(event.target.value);
-                        });
-                      }}
-                      className="w-full rounded-full border-2 border-slate-200 bg-slate-50/80 py-2.5 pl-10 pr-4 text-[13px] font-medium text-textMain outline-none transition-all focus:border-primary focus:bg-white sm:py-3"
-                    />
-                  </div>
-
-                  {/* Mobile filters button */}
-                  <button
-                    type="button"
-                    onClick={() => setShowMobileFilters(true)}
-                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border-2 border-slate-200 bg-white px-4 text-[11px] font-black uppercase tracking-[0.14em] text-textMain transition-colors hover:border-primary lg:hidden"
-                  >
-                    <SlidersHorizontal size={14} />
-                    Filters
-                  </button>
-
-                  {/* Sort */}
-                  <div className="flex min-h-[44px] items-center gap-2 rounded-full border-2 border-slate-200 bg-white px-4">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sort</span>
-                    <select
-                      value={sortBy}
-                      onChange={(event) => setSortBy(event.target.value)}
-                      className="bg-transparent py-2 text-[11px] font-black uppercase tracking-[0.12em] text-textMain outline-none"
-                    >
-                      <option value="relevance">Relevance</option>
-                      <option value="name-asc">Name A-Z</option>
-                      <option value="name-desc">Name Z-A</option>
-                    </select>
-                  </div>
-
-                  {/* View toggle */}
-                  <div className="flex overflow-hidden rounded-full border-2 border-slate-200">
-                    <button
-                      type="button"
-                      onClick={() => setViewMode('grid')}
-                      className={`inline-flex min-h-[44px] items-center justify-center gap-1.5 px-4 text-[11px] font-black uppercase tracking-[0.12em] transition-colors ${
-                        viewMode === 'grid' ? 'bg-primary text-textMain' : 'bg-white text-slate-500 hover:bg-slate-50'
-                      }`}
-                    >
-                      <LayoutGrid size={14} />
-                      Grid
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode('list')}
-                      className={`inline-flex min-h-[44px] items-center justify-center gap-1.5 border-l-2 border-slate-200 px-4 text-[11px] font-black uppercase tracking-[0.12em] transition-colors ${
-                        viewMode === 'list' ? 'bg-primary text-textMain' : 'bg-white text-slate-500 hover:bg-slate-50'
-                      }`}
-                    >
-                      <List size={14} />
-                      List
-                    </button>
-                  </div>
-                </div>
-
-                {/* Active filter chips */}
-                {activeFilterChips.length ? (
-                  <div className="w-full lg:max-w-4xl">
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <span className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Active:</span>
-                      <button
-                        type="button"
-                        onClick={resetFilters}
-                        className="text-[11px] font-bold text-primary transition-colors hover:opacity-80"
-                      >
-                        Clear all
-                      </button>
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {activeFilterChips.map((chip) => (
-                        <button
-                          key={`${chip.key}-${chip.value}`}
-                          type="button"
-                          onClick={() => handleRemoveFilter(chip.key, chip.value)}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition-colors hover:border-primary hover:text-textMain"
-                        >
-                          <span>{chip.label}</span>
-                          <X size={11} />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          <div className="min-h-[420px]">
-            {loading || serverSearchLoading ? (
-              <div className="flex flex-col items-center justify-center gap-4 py-24">
-                <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-primary" />
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-                  {serverSearchLoading ? 'Searching Catalog…' : 'Refreshing Catalog…'}
-                </span>
-              </div>
-            ) : error ? (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-12 text-center">
-                <p className="text-lg font-black tracking-tight text-rose-700">Unable to load catalog</p>
-                <p className="mx-auto mt-3 max-w-xl text-[13px] text-rose-600">{error}</p>
-              </div>
-            ) : filteredEntries.length ? (
-              <div className="space-y-8 sm:space-y-10">
-                <ProductGrid products={paginatedProducts} viewMode={viewMode as any} />
-                {totalPages > 1 ? (
-                  <div className="border-t border-slate-200 pt-8 sm:pt-10">
-                    <Pagination
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      onPageChange={setCurrentPage}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center rounded-3xl border-2 border-dashed border-slate-200 bg-white py-24 text-center">
-                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-                  <Search size={22} className="text-slate-300" />
-                </div>
-                <p className="text-[17px] font-black tracking-tight text-slate-600">
-                  {products.length
-                    ? (hasCategoryScopedResults ? 'No products in this category' : 'No products found')
-                    : 'No products available'}
-                </p>
-                <p className="mt-2 text-[13px] text-slate-400">Try adjusting your filters or search terms.</p>
+          <div
+            className={`fixed inset-y-0 left-0 z-[40] w-[min(88vw,340px)] bg-white transition-transform duration-300 lg:sticky lg:top-6 lg:z-auto lg:w-[280px] lg:self-start lg:bg-transparent xl:w-[300px] ${showMobileFilters ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+              }`}
+          >
+            <div className="flex h-full flex-col">
+              <div className="flex items-center justify-between border-b border-black/10 bg-primary px-5 py-4 lg:hidden">
+                <span className="text-[13px] font-black uppercase tracking-widest text-textMain">Filters</span>
                 <button
                   type="button"
-                  onClick={resetFilters}
-                  className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-8 py-3 text-[11px] font-black uppercase tracking-widest text-textMain transition-all hover:opacity-90 hover:shadow-[0_4px_16px_rgba(251,198,29,0.3)]"
+                  onClick={() => setShowMobileFilters(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl bg-black/10 text-textMain transition-colors hover:bg-black/20"
+                  aria-label="Close filters"
                 >
-                  Clear All Filters
+                  <X size={16} />
                 </button>
               </div>
-            )}
+              <div className="h-full overflow-y-auto p-6 lg:p-0">
+                <FilterSidebar
+                  sections={filterSections as any}
+                  filters={filters}
+                  totalResults={filteredEntries.length}
+                  onToggleOption={handleToggleFilter}
+                  onReset={resetFilters}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="mb-6 border-b border-slate-200 pb-6 sm:mb-8 sm:pb-8">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold text-slate-400">{filteredEntries.length} result{filteredEntries.length !== 1 ? 's' : ''}
+                    {filteredEntries.length !== products.length
+                      ? ` (filtered from ${products.length} total)`
+                      : ''}
+                  </p>
+                  <h1 className="mt-1.5 text-2xl font-black tracking-tight text-textMain sm:mt-2 sm:text-3xl md:text-4xl">
+                    {activeSubcategoryLabel || activeCategoryLabel || 'Global Catalog'}
+                  </h1>
+                </div>
+
+                <div className="flex flex-col gap-4 lg:shrink-0 lg:items-end">
+                  <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
+                    {/* Search */}
+                    <div className="relative w-full sm:max-w-[320px] sm:flex-1 lg:w-[280px] lg:flex-none xl:w-[320px]">
+                      <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search by name, SKU, or specs…"
+                        value={searchTerm}
+                        onChange={(event) => {
+                          startTransition(() => {
+                            setSearchTerm(event.target.value);
+                          });
+                        }}
+                        className="w-full rounded-full border-2 border-slate-200 bg-slate-50/80 py-2.5 pl-10 pr-4 text-[13px] font-medium text-textMain outline-none transition-all focus:border-primary focus:bg-white sm:py-3"
+                      />
+                    </div>
+
+                    {/* Mobile filters button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileFilters(true)}
+                      className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border-2 border-slate-200 bg-white px-4 text-[11px] font-black uppercase tracking-[0.14em] text-textMain transition-colors hover:border-primary lg:hidden"
+                    >
+                      <SlidersHorizontal size={14} />
+                      Filters
+                    </button>
+
+                    {/* Sort */}
+                    <div className="flex min-h-[44px] items-center gap-2 rounded-full border-2 border-slate-200 bg-white px-4">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sort</span>
+                      <select
+                        value={sortBy}
+                        onChange={(event) => setSortBy(event.target.value)}
+                        className="bg-transparent py-2 text-[11px] font-black uppercase tracking-[0.12em] text-textMain outline-none"
+                      >
+                        <option value="relevance">Relevance</option>
+                        <option value="name-asc">Name A-Z</option>
+                        <option value="name-desc">Name Z-A</option>
+                      </select>
+                    </div>
+
+                    {/* View toggle */}
+                    <div className="flex overflow-hidden rounded-full border-2 border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => setViewMode('grid')}
+                        className={`inline-flex min-h-[44px] items-center justify-center gap-1.5 px-4 text-[11px] font-black uppercase tracking-[0.12em] transition-colors ${viewMode === 'grid' ? 'bg-primary text-textMain' : 'bg-white text-slate-500 hover:bg-slate-50'
+                          }`}
+                      >
+                        <LayoutGrid size={14} />
+                        Grid
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setViewMode('list')}
+                        className={`inline-flex min-h-[44px] items-center justify-center gap-1.5 border-l-2 border-slate-200 px-4 text-[11px] font-black uppercase tracking-[0.12em] transition-colors ${viewMode === 'list' ? 'bg-primary text-textMain' : 'bg-white text-slate-500 hover:bg-slate-50'
+                          }`}
+                      >
+                        <List size={14} />
+                        List
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Active filter chips */}
+                  {activeFilterChips.length ? (
+                    <div className="w-full lg:max-w-4xl">
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <span className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Active:</span>
+                        <button
+                          type="button"
+                          onClick={resetFilters}
+                          className="text-[11px] font-bold text-primary transition-colors hover:opacity-80"
+                        >
+                          Clear all
+                        </button>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {activeFilterChips.map((chip) => (
+                          <button
+                            key={`${chip.key}-${chip.value}`}
+                            type="button"
+                            onClick={() => handleRemoveFilter(chip.key, chip.value)}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition-colors hover:border-primary hover:text-textMain"
+                          >
+                            <span>{chip.label}</span>
+                            <X size={11} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="min-h-[420px]">
+              {loading || serverSearchLoading ? (
+                <div className="flex flex-col items-center justify-center gap-4 py-24">
+                  <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-primary" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+                    {serverSearchLoading ? 'Searching Catalog…' : 'Refreshing Catalog…'}
+                  </span>
+                </div>
+              ) : error ? (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-12 text-center">
+                  <p className="text-lg font-black tracking-tight text-rose-700">Unable to load catalog</p>
+                  <p className="mx-auto mt-3 max-w-xl text-[13px] text-rose-600">{error}</p>
+                </div>
+              ) : filteredEntries.length ? (
+                <div className="space-y-8 sm:space-y-10">
+                  <ProductGrid products={paginatedProducts} viewMode={viewMode as any} />
+                  {totalPages > 1 ? (
+                    <div className="border-t border-slate-200 pt-8 sm:pt-10">
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center rounded-3xl border-2 border-dashed border-slate-200 bg-white py-24 text-center">
+                  <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
+                    <Search size={22} className="text-slate-300" />
+                  </div>
+                  <p className="text-[17px] font-black tracking-tight text-slate-600">
+                    {products.length
+                      ? (hasCategoryScopedResults ? 'No products in this category' : 'No products found')
+                      : 'No products available'}
+                  </p>
+                  <p className="mt-2 text-[13px] text-slate-400">Try adjusting your filters or search terms.</p>
+                  <button
+                    type="button"
+                    onClick={resetFilters}
+                    className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-8 py-3 text-[11px] font-black uppercase tracking-widest text-textMain transition-all hover:opacity-90 hover:shadow-[0_4px_16px_rgba(251,198,29,0.3)]"
+                  >
+                    Clear All Filters
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

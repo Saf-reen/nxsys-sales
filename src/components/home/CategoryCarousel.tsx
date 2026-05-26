@@ -168,9 +168,6 @@ function CategoryCarousel({
         <div className="flex items-end justify-between gap-4 border-b border-slate-200 pb-6">
           <div>
             <h2 className="text-2xl font-black tracking-tight text-slate-900 sm:text-[28px]">{category}</h2>
-            <p className="mt-1 text-[12px] font-semibold text-slate-400">
-              {products.length} product{products.length !== 1 ? 's' : ''} available
-            </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button

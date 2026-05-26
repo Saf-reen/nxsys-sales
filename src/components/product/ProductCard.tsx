@@ -151,12 +151,8 @@ function ProductCard({ product, viewMode = 'grid' }) {
               <div className="space-y-3">
                 {/* Brand + category */}
                 <div className="flex flex-wrap items-center gap-2">
-                  {(product.brandName || product.brand) ? (
-                    <span className="text-[10px] font-black uppercase tracking-widest text-primary">
-                      {product.brandName || product.brand}
-                    </span>
-                  ) : null}
-                  {(product.brandName || product.brand) && product.categoryName ? (
+                  {(() => { const b = product.brandName || (isNaN(Number(product.brand)) ? product.brand : '') || ''; return b ? <span className="text-[10px] font-black uppercase tracking-widest text-primary">{b}</span> : null; })()}
+                  {(product.brandName || (isNaN(Number(product.brand)) ? product.brand : '')) && product.categoryName ? (
                     <span className="h-1 w-1 rounded-full bg-slate-300" />
                   ) : null}
                   {product.categoryName ? (
@@ -171,19 +167,12 @@ function ProductCard({ product, viewMode = 'grid' }) {
                   {product.name}
                 </h3>
 
-                {/* MPN / SKU chips */}
-                <div className="flex flex-wrap gap-2">
-                  {product.mpn && (
-                    <span className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold text-slate-500">
-                      MPN: <span className="text-slate-800">{product.mpn}</span>
-                    </span>
-                  )}
-                  {product.sku && (
-                    <span className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold text-slate-500">
-                      SKU: <span className="text-slate-800">{product.sku}</span>
-                    </span>
-                  )}
-                </div>
+                {/* Description */}
+                {(product.description || product.short_description) ? (
+                  <p className="line-clamp-2 text-[13px] leading-relaxed text-slate-500">
+                    {product.description || product.short_description}
+                  </p>
+                ) : null}
 
                 {/* Price */}
                 {product.price ? (
@@ -257,28 +246,19 @@ function ProductCard({ product, viewMode = 'grid' }) {
         {/* Card body */}
         <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
           {/* Brand */}
-          <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-            {product.brandName || product.brand || ''}
-          </p>
+          {(() => { const b = product.brandName || (isNaN(Number(product.brand)) ? product.brand : '') || ''; return b ? <p className="text-[10px] font-black uppercase tracking-widest text-primary">{b}</p> : null; })()}
 
           {/* Name */}
           <h3 className="line-clamp-2 text-[14px] font-bold leading-snug tracking-tight text-textMain transition-colors group-hover:text-primary sm:text-[15px]">
             {product.name}
           </h3>
 
-          {/* MPN / SKU */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50/80 px-3 py-2.5">
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">MPN</span>
-                <span className="max-w-[60%] truncate text-right text-[11px] font-semibold text-slate-700">{product.mpn || 'N/A'}</span>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">SKU</span>
-                <span className="max-w-[60%] truncate text-right text-[11px] font-semibold text-slate-700">{product.sku || 'N/A'}</span>
-              </div>
-            </div>
-          </div>
+          {/* Description */}
+          {(product.description || product.short_description) ? (
+            <p className="line-clamp-2 text-[12px] leading-relaxed text-slate-500">
+              {product.description || product.short_description}
+            </p>
+          ) : null}
 
           {/* Price */}
           {product.price ? (

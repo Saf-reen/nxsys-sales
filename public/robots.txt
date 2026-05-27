@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /login
+Disallow: /register
+Disallow: /signup
+Disallow: /verify-email-otp
+Disallow: /forgot-password
+Disallow: /verify-otp
+Disallow: /reset-password
+Disallow: /wishlist
+Disallow: /dashboard
+
+Sitemap: https://nxsysdigital.com/sitemap.xml

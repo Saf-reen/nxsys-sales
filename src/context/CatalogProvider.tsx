@@ -14,6 +14,8 @@ import {
 import { CatalogContext } from '@/context/catalogContext';
 import logger from '@/utils/logger';
 
+const STALE_MS = 5 * 60 * 1000; // 5 minutes — min gap between focus-triggered re-fetches
+
 export function CatalogProvider({ children }) {
   const [categories, setCategories] = useState<any[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
@@ -23,25 +25,23 @@ export function CatalogProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<any>(null);
   const latestCatalogVersionRef = useRef(getCatalogSyncVersion());
+  const lastFetchedAtRef = useRef(0);
 
   const refreshCatalog = useCallback(async (options: { force?: boolean; silent?: boolean } = {}) => {
-    const { force = false, silent = false } = options;
+    const { silent = false } = options;
 
-    if (!silent) {
-      setLoading(true);
-    }
+    if (!silent) setLoading(true);
     setError(null);
 
     try {
       const catalogData = await getCatalogData();
-      console.log(catalogData);
       const allCategories = Array.isArray(catalogData.categories) ? catalogData.categories : [];
       setCategories(allCategories);
       setSubcategories(allCategories.filter((c: any) => !!c.parent));
       setBrands(Array.isArray(catalogData.brands) ? catalogData.brands : []);
       setCategoryTree(Array.isArray(catalogData.categoryTree) ? catalogData.categoryTree : []);
       setSubcategoriesByCategory((catalogData as any).subcategoriesByCategory || {});
-
+      lastFetchedAtRef.current = Date.now();
       return catalogData;
     } catch (err) {
       const errorMsg = getApiErrorMessage(err, 'Failed to fetch catalog data');
@@ -49,9 +49,7 @@ export function CatalogProvider({ children }) {
       setError(errorMsg);
       return null;
     } finally {
-      if (!silent) {
-        setLoading(false);
-      }
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -60,29 +58,33 @@ export function CatalogProvider({ children }) {
   }, [refreshCatalog]);
 
   useEffect(() => {
+    // Version-based sync: fires immediately for real catalog changes from another tab or
+    // from admin mutations within this tab. No stale-time guard here — version change means
+    // something genuinely changed and we want it reflected ASAP.
     const syncCatalogIfNeeded = (nextVersion?: string) => {
       const resolvedVersion = nextVersion || getCatalogSyncVersion();
-      if (!resolvedVersion || resolvedVersion === latestCatalogVersionRef.current) {
-        return;
-      }
-
+      if (!resolvedVersion || resolvedVersion === latestCatalogVersionRef.current) return;
       latestCatalogVersionRef.current = resolvedVersion;
       refreshCatalog({ force: true, silent: true });
     };
 
-    const handleStorage = (event) => {
-      if (event.key !== CATALOG_SYNC_KEY) {
-        return;
-      }
-      syncCatalogIfNeeded(event.newValue);
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === CATALOG_SYNC_KEY) syncCatalogIfNeeded(event.newValue ?? undefined);
     };
 
-    const handleCatalogSync = (event) => syncCatalogIfNeeded(event.detail);
-    const handleWindowFocus = () => syncCatalogIfNeeded();
+    const handleCatalogSync = (event: Event) =>
+      syncCatalogIfNeeded((event as CustomEvent<string>).detail);
+
+    // Focus / visibility: only re-fetch if data is stale. Prevents a full reload every time
+    // the user alt-tabs to Gmail and back.
+    const syncIfStale = () => {
+      if (Date.now() - lastFetchedAtRef.current < STALE_MS) return;
+      syncCatalogIfNeeded();
+    };
+
+    const handleWindowFocus = () => syncIfStale();
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        syncCatalogIfNeeded();
-      }
+      if (document.visibilityState === 'visible') syncIfStale();
     };
 
     window.addEventListener('storage', handleStorage);
@@ -108,17 +110,17 @@ export function CatalogProvider({ children }) {
       loading,
       error,
       refreshCatalog,
-      addCategory: async (data) => {
+      addCategory: async (data: any) => {
         const result = await createCategory(data);
         await refreshCatalog({ force: true, silent: true });
         return result;
       },
-      updateCategory: async (id, data) => {
+      updateCategory: async (id: any, data: any) => {
         const result = await updateCategory(id, data);
         await refreshCatalog({ force: true, silent: true });
         return result;
       },
-      deleteCategory: async (id) => {
+      deleteCategory: async (id: any) => {
         const result = await deleteCategory(id);
         await refreshCatalog({ force: true, silent: true });
         return result;

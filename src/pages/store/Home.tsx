@@ -7,6 +7,7 @@ import TopSellersGrid from '@/components/home/TopSellersGrid';
 import CategoryCarousel, { type CarouselVariant } from '@/components/home/CategoryCarousel';
 import CategoryBrandStrip from '@/components/home/CategoryBrandStrip';
 import WhyChooseUs from '@/components/home/WhyChooseUs';
+import SEOAboutSection from '@/components/home/SEOAboutSection';
 
 import { categoryBrandStrip as showcaseCategoryBrandStrip, heroSlides } from '@/utils';
 
@@ -149,6 +150,7 @@ function Home() {
 
       <CategoryBrandStrip data={categoryBrandStrip} />
       <WhyChooseUs />
+      <SEOAboutSection />
     </main>
   );
 }

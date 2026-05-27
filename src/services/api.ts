@@ -647,7 +647,7 @@ export const catalogApi = {
     };
   },
   getProducts: (params: any = {}, cat: any = {}) =>
-    fetchAllPages(publicApi, '/products/products/', cleanSearchParams(params))
+    fetchAllPages(publicApi, '/products/products/', cleanSearchParams({ page_size: 200, ...params }))
       .then(allProducts => allProducts.map((p: any) => normalizeProduct(p, cat)).filter(Boolean)),
   getProductById: (id: any, cat: any = {}) => publicApi.get(`/products/products/${id}/`).then(res => {
     const data = unwrapResponse(res);

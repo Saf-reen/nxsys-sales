@@ -5,10 +5,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description"
-    content="Nx Sys SRIA Distribution - Premium enterprise B2B procurement portal for bulk electronics sourcing and pricing. Access official OEM pricing and inventory." />
-  <meta name="keywords" content="B2B, procurement, electronics, distribution, enterprise IT, sourcing, RFQ" />
+    content="Nx Sys SRIA Distribution - Premium enterprise B2B procurement portal for bulk electronics sourcing, pricing, and RFQ management. Access verified OEM stock and competitive bulk pricing for enterprise IT hardware." />
+  <meta name="keywords" content="B2B, procurement, electronics, distribution, enterprise IT, sourcing, RFQ, OEM, bulk pricing, monitors, projectors" />
   <meta name="robots" content="index, follow" />
   <meta name="theme-color" content="#FBC61D" />
+  <link rel="canonical" href="https://nxsysdigital.com/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
@@ -18,12 +19,77 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet" />
   </noscript>
 
+  <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Nx Sys - SRIA Distribution Portal" />
+  <meta property="og:url" content="https://nxsysdigital.com/" />
+  <meta property="og:site_name" content="NxSys SRIA Distribution" />
+  <meta property="og:title" content="NxSys - B2B Distribution Portal" />
   <meta property="og:description"
     content="Official enterprise B2B procurement portal. Streamlined RFQ management and bulk pricing for verified partners." />
+  <meta property="og:image" content="https://nxsysdigital.com/og-image.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@nxsysdigital" />
+  <meta name="twitter:title" content="NxSys - B2B Distribution Portal" />
+  <meta name="twitter:description"
+    content="Official enterprise B2B procurement portal. Streamlined RFQ management and bulk pricing for verified partners." />
+  <meta name="twitter:image" content="https://nxsysdigital.com/og-image.png" />
+
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <title>NxSys - B2B Distribution Portal</title>
+
+  <!-- Schema.org structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://nxsysdigital.com/#organization",
+        "name": "NxSys SRIA Distribution",
+        "url": "https://nxsysdigital.com",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://nxsysdigital.com/favicon.ico"
+        },
+        "description": "Premium enterprise B2B procurement portal for bulk electronics sourcing, pricing, and RFQ management.",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "customer support",
+          "url": "https://nxsysdigital.com/contact"
+        }
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://nxsysdigital.com/#website",
+        "url": "https://nxsysdigital.com",
+        "name": "NxSys - B2B Distribution Portal",
+        "description": "Premium enterprise B2B procurement portal for bulk electronics sourcing, pricing, and RFQ management.",
+        "publisher": {
+          "@id": "https://nxsysdigital.com/#organization"
+        },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://nxsysdigital.com/products?search={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      }
+    ]
+  }
+  </script>
+  <!-- Google Analytics GA4 — replace G-XXXXXXXXXX with your Measurement ID -->
+  <!-- Get your ID: analytics.google.com → Admin → Data Streams → your stream -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+  </script>
 </head>
 
 <body class="bg-slate-50">

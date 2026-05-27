@@ -46,7 +46,6 @@ function HeroBanner({ slides = [] }: { slides?: any[] }) {
               alt={activeSlide.headline}
               className="w-full h-full object-cover object-center"
               loading="eager"
-              fetchPriority="high"
               decoding="async"
             />
 

@@ -50,7 +50,7 @@ function TopHeader({ profile, handleLogout }) {
     const timer = window.setTimeout(async () => {
       try {
         const suggestions = await searchApi.autocomplete(trimmedQuery);
-        if (isMounted) setRemoteSuggestions(suggestions);
+        if (isMounted) setRemoteSuggestions(Array.isArray(suggestions) ? suggestions : []);
       } catch {
         if (isMounted) setRemoteSuggestions([]);
       }
@@ -232,9 +232,9 @@ function TopHeader({ profile, handleLogout }) {
                             className="group flex items-start gap-3"
                           >
                             <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-100 bg-slate-50 p-1">
-                              {p.images?.[0] || p.image ? (
+                              {p.image ? (
                                 <img
-                                  src={(resolveAssetUrl(p.images?.[0] || p.image)) ?? undefined}
+                                  src={resolveAssetUrl(p.image) ?? undefined}
                                   alt={p.name}
                                   className="max-h-full max-w-full object-contain"
                                   loading="lazy"

@@ -218,13 +218,49 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
 
   const activeProducts = Array.isArray(serverSearchProducts) ? serverSearchProducts : products;
 
+  // Fast lookup: categoryId (string) → category object — used inside catalogEntries map
+  const categoryById = useMemo(
+    () => new Map(categories.map((c: any) => [String(c.id), c])),
+    [categories],
+  );
+
   const catalogEntries = useMemo(
     () =>
       activeProducts.map((product: any) => {
-        const categoryLabel = getCategoryName(product.category) || 'Uncategorized';
-        const subcategoryLabel = getSubcategoryName(product.subcategoryData ?? product.subcategory) || '';
-        const categoryId = String(product.categoryId ?? product.category?.id ?? product.category ?? '');
-        const subcategoryId = String(product.subcategoryId ?? product.subcategoryData?.id ?? product.subcategory?.id ?? '');
+        // --- Resolve raw IDs from the product ---
+        const rawCatId = String(
+          product.categoryId ??
+          product.category?.id ??
+          (typeof product.category !== 'object' ? product.category : null) ??
+          ''
+        );
+        const rawSubObj = product.subcategoryData ?? product.subcategory;
+        const rawSubId = String(
+          product.subcategoryId ??
+          rawSubObj?.id ??
+          (typeof rawSubObj !== 'object' ? rawSubObj : null) ??
+          ''
+        );
+
+        // --- Parent/child resolution ----------------------------------------
+        // The backend returns ALL categories (parents + children) in one flat
+        // list. A product's `category` field may point to a child category
+        // (one that has `parent` set), NOT the top-level parent. If we leave
+        // categoryId as the child ID, the category filter (which is seeded with
+        // the parent's ID from the URL) will never match.
+        //
+        // Fix: when the product's category is a child, promote the parent to
+        // categoryId and use the child as subcategoryId.
+        const catObj = categoryById.get(rawCatId);
+        const categoryId = catObj?.parent ? String(catObj.parent) : rawCatId;
+        const subcategoryId = catObj?.parent ? rawCatId : rawSubId;
+
+        // --- Labels ---
+        const categoryLabel = getCategoryName(categoryId, categories) || 'Uncategorized';
+        const subcategoryLabel =
+          (catObj?.parent ? catObj.name : null) ||
+          getSubcategoryName(subcategoryId, subcategories) ||
+          '';
         const displayValue =
           getSpecificationValue(product, ['display_size', 'display', 'screen_size']) || '';
         const modelNameValue =
@@ -266,7 +302,7 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
           searchText: `${name} ${mpn} ${sku} ${specificationsText}`.toLowerCase(),
         } as Record<string, any>;
       }),
-    [activeProducts, categories, subcategories, brands],
+    [activeProducts, categories, subcategories, brands, categoryById],
   );
 
   const selectedCategoryIds = filters.categories;
@@ -649,9 +685,14 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
                         placeholder="Search by name, SKU, or specs…"
                         value={searchTerm}
                         onChange={(event) => {
-                          startTransition(() => {
-                            setSearchTerm(event.target.value);
-                          });
+                          const val = event.target.value;
+                          startTransition(() => setSearchTerm(val));
+                          setSearchParams((prev) => {
+                            const next = new URLSearchParams(prev);
+                            if (val.trim()) next.set('search', val.trim());
+                            else next.delete('search');
+                            return next;
+                          }, { replace: true });
                         }}
                         className="w-full rounded-full border-2 border-slate-200 bg-slate-50/80 py-2.5 pl-10 pr-4 text-[13px] font-medium text-textMain outline-none transition-all focus:border-primary focus:bg-white sm:py-3"
                       />

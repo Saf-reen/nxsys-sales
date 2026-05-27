@@ -141,7 +141,6 @@ function ProductGallery({ images = [] as any[], alt = 'Product image' }: { image
             alt={alt}
             className="h-full w-full object-contain"
             loading="eager"
-            fetchPriority="high"
             decoding="async"
             onError={(e: any) => { e.currentTarget.src = placeholder; }}
           />

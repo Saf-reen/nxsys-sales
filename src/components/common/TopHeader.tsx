@@ -139,7 +139,7 @@ function TopHeader({ profile, handleLogout }) {
               ) : (
                 <div className="flex items-center gap-1.5">
                   <Link
-                    to={isAdminUser(profile) ? '/admin' : '/'}
+                    to={isAdminUser(profile) ? '/admin' : '/profile'}
                     className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-textMain transition-colors hover:bg-slate-50"
                     title={profile.name}
                   >
@@ -305,7 +305,7 @@ function TopHeader({ profile, handleLogout }) {
             ) : (
               <>
                 <Link
-                  to={isAdminUser(profile) ? '/admin' : '/'}
+                  to={isAdminUser(profile) ? '/admin' : '/profile'}
                   className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-[11px] font-bold uppercase tracking-widest text-textMain transition-colors hover:bg-slate-50 max-w-[200px]"
                 >
                   <User size={15} className="shrink-0 text-slate-500" />

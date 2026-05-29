@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   CheckCircle,
@@ -7,374 +7,524 @@ import {
   Package,
   RefreshCcw,
   XCircle,
-  ChevronRight,
+  FileText,
+  ClipboardList,
+  User,
+  AlertCircle,
 } from 'lucide-react';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
-import { authService } from '@/services';
-import { rfqService } from '@/services';
-import { getApiErrorMessage } from '@/services';
-import { formatCurrency } from '../../utils/helpers';
+import { authService, profileApi, getApiErrorMessage } from '@/services';
 
-const formatRequestDate = (value) => {
-  if (!value) {
-    return 'Recently';
-  }
-
-  const parsedDate = new Date(value);
-  if (Number.isNaN(parsedDate.getTime())) {
-    return 'Recently';
-  }
-
-  return new Intl.DateTimeFormat('en-IN', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(parsedDate);
+const formatDate = (value: string) => {
+  if (!value) return 'Recently';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return 'Recently';
+  return new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' }).format(d);
 };
 
-const normalizeRequestStatus = (status) => {
-  const normalizedStatus = String(status || 'pending')
-    .trim()
-    .toLowerCase();
-
-  if (normalizedStatus === 'quote_sent') {
-    return 'quoted';
-  }
-
-  if (normalizedStatus === 'closed') {
-    return 'closed';
-  }
-
-  return normalizedStatus;
+const ENQUIRY_STATUS_MAP: Record<string, { label: string; color: string; icon: JSX.Element }> = {
+  submitted: {
+    label: 'Submitted',
+    color: 'text-blue-700 bg-blue-50 border-blue-100',
+    icon: <Clock size={13} />,
+  },
+  reviewed: {
+    label: 'Reviewed',
+    color: 'text-primary bg-primary/10 border-primary/20',
+    icon: <CheckCircle size={13} />,
+  },
+  resolved: {
+    label: 'Resolved',
+    color: 'text-emerald-700 bg-emerald-50 border-emerald-100',
+    icon: <CheckCircle size={13} />,
+  },
+  closed: {
+    label: 'Closed',
+    color: 'text-rose-700 bg-rose-50 border-rose-100',
+    icon: <XCircle size={13} />,
+  },
 };
 
-const formatRequestStatus = (status) => {
-  const normalizedStatus = normalizeRequestStatus(status);
-
-  if (normalizedStatus === 'quoted') {
-    return 'Quoted';
-  }
-
-  if (normalizedStatus === 'closed') {
-    return 'Closed';
-  }
-
-  return 'Pending';
+const QUOTE_STATUS_MAP: Record<string, { label: string; color: string; icon: JSX.Element }> = {
+  pending: {
+    label: 'Pending',
+    color: 'text-primary bg-primary/10 border-primary/20',
+    icon: <Clock size={13} />,
+  },
+  quote_sent: {
+    label: 'Quoted',
+    color: 'text-emerald-700 bg-emerald-50 border-emerald-100',
+    icon: <CheckCircle size={13} />,
+  },
+  quoted: {
+    label: 'Quoted',
+    color: 'text-emerald-700 bg-emerald-50 border-emerald-100',
+    icon: <CheckCircle size={13} />,
+  },
+  closed: {
+    label: 'Closed',
+    color: 'text-rose-700 bg-rose-50 border-rose-100',
+    icon: <XCircle size={13} />,
+  },
 };
+
+const getStatus = (map: typeof ENQUIRY_STATUS_MAP, status: string) => {
+  const key = String(status || '').trim().toLowerCase();
+  return (
+    map[key] || {
+      label: status || 'Unknown',
+      color: 'text-slate-600 bg-slate-50 border-slate-100',
+      icon: <AlertCircle size={13} />,
+    }
+  );
+};
+
+type Tab = 'enquiries' | 'quotes';
 
 function CustomerDashboard() {
-  const user = authService.getCurrentUser();
-  const [requests, setRequests] = useState<any[]>([]);
+  const navigate = useNavigate();
+  const sessionUser = authService.getCurrentUser();
+
+  useEffect(() => {
+    if (!authService.isAuthenticated()) navigate('/login', { replace: true });
+  }, [navigate]);
+
+  const [activeTab, setActiveTab] = useState<Tab>('enquiries');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const userKey = user?.id ?? user?.sub ?? user?.username ?? user?.email ?? authService.getToken() ?? '';
+  const [userData, setUserData] = useState<any>(null);
+  const [profileInfo, setProfileInfo] = useState<any>(null);
+  const [enquiries, setEnquiries] = useState<any[]>([]);
+  const [quotes, setQuotes] = useState<any[]>([]);
 
-  const loadRequests = useCallback(async () => {
+  const loadData = async () => {
     setLoading(true);
     setError('');
-
     try {
-      const data = await rfqService.getRequests();
-      setRequests(Array.isArray(data) ? data : []);
-    } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Unable to load your RFQ requests right now.'));
-      setRequests([]);
+      const data = await profileApi.getProfile();
+      setUserData(data?.user || null);
+      setProfileInfo(data?.profile || null);
+      setEnquiries(Array.isArray(data?.enquiries?.results) ? data.enquiries.results : []);
+      setQuotes(Array.isArray(data?.quote_requests?.results) ? data.quote_requests.results : []);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Unable to load your requests right now.'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    if (!userKey) {
-      setLoading(false);
-      return;
-    }
+    if (authService.isAuthenticated()) loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    loadRequests();
-  }, [loadRequests, userKey]);
-
-  const sortedRequests = useMemo(
-    () =>
-      [...requests].sort((first, second) => {
-        const firstDate = new Date(first.createdAt || 0).getTime();
-        const secondDate = new Date(second.createdAt || 0).getTime();
-        return secondDate - firstDate;
-      }),
-    [requests],
-  );
-
-  const stats = useMemo(() => {
-    const pending = sortedRequests.filter((request) => normalizeRequestStatus(request.status) === 'pending').length;
-    const quoted = sortedRequests.filter((request) => normalizeRequestStatus(request.status) === 'quoted').length;
-    const closed = sortedRequests.filter((request) => normalizeRequestStatus(request.status) === 'closed').length;
-    const latestQuoted = sortedRequests.find((request) => normalizeRequestStatus(request.status) === 'quoted');
-
-    return {
-      pending,
-      quoted,
-      closed,
-      latestQuoted,
-    };
-  }, [sortedRequests]);
-
-  const getStatusColor = (status) => {
-    switch (normalizeRequestStatus(status)) {
-      case 'quoted':
-        return 'text-emerald-700 bg-emerald-50 border-emerald-100';
-      case 'closed':
-        return 'text-rose-700 bg-rose-50 border-rose-100';
-      case 'pending':
-        return 'text-primary bg-primary/10 border-primary/20';
-      default:
-        return 'text-slate-600 bg-slate-50 border-slate-100';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (normalizeRequestStatus(status)) {
-      case 'quoted':
-        return <CheckCircle size={14} />;
-      case 'closed':
-        return <XCircle size={14} />;
-      default:
-        return <Clock size={14} />;
-    }
-  };
-
-  const statCards = [
-    {
-      label: 'Total RFQs',
-      value: sortedRequests.length,
-      helper: 'All procurement requests submitted from your account.',
-      valueClassName: 'text-slate-950',
-    },
-    {
-      label: 'Pending',
-      value: stats.pending,
-      helper: 'Requests waiting for your account manager to respond.',
-      valueClassName: 'text-primary',
-    },
-    {
-      label: 'Quoted',
-      value: stats.quoted,
-      helper: 'Pricing becomes visible here only after a quote is issued.',
-      valueClassName: 'text-emerald-600',
-    },
-    {
-      label: 'Closed',
-      value: stats.closed,
-      helper: 'Requests that were closed after review by the account team.',
-      valueClassName: 'text-rose-600',
-    },
-  ];
+  const displayName =
+    [userData?.first_name, userData?.last_name].filter(Boolean).join(' ') ||
+    userData?.full_name ||
+    sessionUser?.name ||
+    'Customer';
 
   return (
     <div className="min-h-screen bg-slate-50/30">
-      <Breadcrumbs items={[{ label: 'Dashboard', active: true }]} />
-      
+      <Breadcrumbs items={[{ label: 'My Requests', active: true }]} />
+
       <div className="container-shell pb-8 pt-8 sm:pb-16 lg:pb-20">
-      <div className="mx-auto max-w-7xl space-y-8 sm:space-y-10">
-        <header className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <div className="mb-3 flex items-center gap-2.5">
-              <div className="h-[3px] w-5 rounded-full bg-primary" />
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Customer Dashboard</p>
+        <div className="mx-auto max-w-6xl space-y-8">
+
+          {/* Header */}
+          <header className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+            <div>
+              <div className="mb-3 flex items-center gap-2.5">
+                <div className="h-[3px] w-5 rounded-full bg-primary" />
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">My Account</p>
+              </div>
+              <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Request History</h1>
+              <p className="mt-3 max-w-xl text-[13px] leading-6 text-slate-500">
+                Track your product enquiries and price quote requests. Check status updates from our team.
+              </p>
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-              Procurement RFQs
-            </h1>
-            <p className="mt-3 max-w-2xl text-[13px] leading-6 text-slate-500">
-              Track quote requests, review statuses, and view pricing once an RFQ has been quoted.
-            </p>
-          </div>
-
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap xl:w-auto xl:justify-end">
-            <Link
-              to="/products"
-              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-textMain px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-black"
-            >
-              Browse Catalog
-              <ArrowRight size={14} className="text-primary" />
-            </Link>
-            <button
-              type="button"
-              onClick={loadRequests}
-              className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-slate-600 transition-colors hover:border-primary hover:bg-primary/10"
-            >
-              <RefreshCcw size={14} />
-              Refresh
-            </button>
-          </div>
-        </header>
-
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {statCards.map((card) => (
-            <article key={card.label} className="metric-card">
-              <p className="metric-card-label">{card.label}</p>
-              <p className={`metric-card-value ${card.valueClassName}`}>{card.value}</p>
-              <p className="metric-card-helper">{card.helper}</p>
-            </article>
-          ))}
-        </section>
-
-        {error ? (
-          <div className="rounded-[28px] border border-rose-200 bg-rose-50 p-5 text-rose-700 sm:p-6">
-            <p className="font-semibold text-rose-900">Unable to load requests</p>
-            <p className="mt-2 text-sm">{error}</p>
-          </div>
-        ) : null}
-
-        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)] xl:gap-8">
-          <section className="space-y-6">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="section-eyebrow">Activity</p>
-                <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">RFQ timeline</h2>
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400">
-                {sortedRequests.length} Request{sortedRequests.length === 1 ? '' : 's'}
-              </span>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to="/products"
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-textMain px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-black"
+              >
+                Browse Catalog
+                <ArrowRight size={14} className="text-primary" />
+              </Link>
+              <button
+                type="button"
+                onClick={loadData}
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.18em] text-slate-600 transition-colors hover:border-primary hover:bg-primary/10"
+              >
+                <RefreshCcw size={13} />
+                Refresh
+              </button>
             </div>
+          </header>
 
-            {loading ? (
-              <div className="section-panel py-16 text-center sm:py-20">
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Fetching inquiries...</p>
-              </div>
-            ) : sortedRequests.length ? (
-              <div className="space-y-4">
-                {sortedRequests.map((rfq) => (
-                  <article key={rfq.id} className="section-panel transition-colors hover:border-primary/40">
-                    <div className="flex flex-col gap-5">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="flex min-w-0 gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-slate-300">
-                            <Package size={24} />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                              <h3 className="break-words text-base font-semibold tracking-tight text-slate-900">
-                                {rfq.product?.name || 'Custom sourcing requested'}
-                              </h3>
-                              {rfq.product?.id ? (
-                                <Link
-                                  to={`/product/${rfq.product.id}`}
-                                  className="text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:underline hover:opacity-90"
-                                >
-                                  View product
-                                </Link>
-                              ) : null}
-                            </div>
-                            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-400">
-                              <span>Qty: {rfq.quantity}</span>
-                              <span className="hidden sm:inline w-1 h-1 bg-slate-200 rounded-full" />
-                              <span>Ref: #{String(rfq.id).padStart(5, '0')}</span>
-                              <span className="hidden sm:inline w-1 h-1 bg-slate-200 rounded-full" />
-                              <span>{formatRequestDate(rfq.createdAt)}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className={`inline-flex shrink-0 items-center gap-1.5 self-start rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] ${getStatusColor(rfq.status)}`}>
-                          {getStatusIcon(rfq.status)}
-                          <span>{formatRequestStatus(rfq.status)}</span>
-                        </div>
-                      </div>
-
-                      {rfq.message ? (
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">Message</p>
-                          <p className="break-words text-sm leading-relaxed text-slate-600">{rfq.message}</p>
-                        </div>
-                      ) : null}
-
-                      {normalizeRequestStatus(rfq.status) === 'quoted' && rfq.quotedPrice ? (
-                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-                          <p className="mb-2 text-[10px] font-black uppercase tracking-[0.25em] text-emerald-700">Quoted price</p>
-                          <p className="text-2xl font-black text-emerald-700">{formatCurrency(rfq.quotedPrice)}</p>
-                          <p className="mt-2 text-sm text-emerald-800/80">Pricing is visible only because this RFQ has been quoted.</p>
-                        </div>
-                      ) : null}
-
-                      {normalizeRequestStatus(rfq.status) === 'closed' ? (
-                        <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
-                          <p className="text-sm text-rose-700">This request was closed. Please contact support or submit a new RFQ with updated requirements.</p>
-                        </div>
-                      ) : null}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            ) : (
-              <div className="section-panel py-14 text-center sm:py-16">
-                <Package size={40} className="mx-auto text-slate-200 mb-4" />
-                <h3 className="font-bold text-slate-500 uppercase tracking-widest text-sm mb-2">No RFQs submitted yet</h3>
-                <p className="text-sm text-slate-400 max-w-md mx-auto">
-                  Browse the catalog, open a product, and use Request Price to begin your procurement workflow.
-                </p>
-                <Link
-                  to="/products"
-                  className="mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-textMain transition-colors hover:opacity-90"
-                >
-                  Explore products
-                  <ArrowRight size={14} />
-                </Link>
-              </div>
-            )}
+          {/* Stat cards */}
+          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              {
+                label: 'Total Enquiries',
+                value: enquiries.length,
+                sub: 'General product enquiries submitted',
+                color: 'text-slate-950',
+              },
+              {
+                label: 'Quote Requests',
+                value: quotes.length,
+                sub: 'Pricing requests awaiting response',
+                color: 'text-primary',
+              },
+              {
+                label: 'Submitted',
+                value: enquiries.filter((e) => String(e.status).toLowerCase() === 'submitted').length,
+                sub: 'Awaiting review from our team',
+                color: 'text-blue-600',
+              },
+              {
+                label: 'Resolved',
+                value: enquiries.filter((e) =>
+                  ['resolved', 'quoted'].includes(String(e.status).toLowerCase()),
+                ).length,
+                sub: 'Enquiries & quotes that are resolved',
+                color: 'text-emerald-600',
+              },
+            ].map((card) => (
+              <article key={card.label} className="metric-card">
+                <p className="metric-card-label">{card.label}</p>
+                <p className={`metric-card-value ${card.color}`}>{loading ? '—' : card.value}</p>
+                <p className="metric-card-helper">{card.sub}</p>
+              </article>
+            ))}
           </section>
 
-          <aside className="space-y-6 xl:sticky xl:top-32">
-            <div className="surface-panel-dark relative overflow-hidden p-6 sm:p-7">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary rotate-45 translate-x-16 -translate-y-16 opacity-20" />
-              <div className="relative z-10">
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-primary">Account summary</p>
-                <div className="mt-5 space-y-0 divide-y divide-white/10">
-                  <div className="flex items-start justify-between gap-4 py-3 first:pt-0">
-                  <span className="text-[11px] font-medium text-white/60 uppercase">Partner</span>
-                    <span className="max-w-[60%] break-words text-right text-sm font-bold text-white">{user?.name || 'Customer'}</span>
-                  </div>
-                  <div className="flex items-start justify-between gap-4 py-3">
-                  <span className="text-[11px] font-medium text-white/60 uppercase">Email</span>
-                    <span className="max-w-[60%] break-all text-right text-sm font-bold text-white">{user?.email || 'N/A'}</span>
-                  </div>
-                  <div className="flex items-start justify-between gap-4 py-3">
-                  <span className="text-[11px] font-medium text-white/60 uppercase">Contact</span>
-                    <span className="max-w-[60%] break-words text-right text-sm font-bold text-white">{user?.phone || 'N/A'}</span>
-                  </div>
-                  <div className="flex items-start justify-between gap-4 py-3 last:pb-0">
-                  <span className="text-[11px] font-medium text-white/60 uppercase">Access</span>
-                    <span className="text-right text-xs font-black uppercase tracking-[0.2em] text-primary">Verified partner</span>
-                  </div>
-                </div>
-              </div>
+          {error && (
+            <div className="rounded-[28px] border border-rose-200 bg-rose-50 p-5 text-rose-700">
+              <p className="font-semibold text-rose-900">Unable to load requests</p>
+              <p className="mt-1 text-sm">{error}</p>
             </div>
+          )}
 
-            <div className="section-panel-muted">
-              <p className="section-eyebrow">Latest quote</p>
-              <h3 className="mt-1 text-lg font-semibold tracking-tight text-slate-950">Most recent pricing update</h3>
-              {stats.latestQuoted ? (
-                <div className="mt-4 space-y-3">
-                  <p className="text-sm font-semibold text-slate-900">{stats.latestQuoted.product?.name || 'Quoted RFQ'}</p>
-                  <p className="text-2xl font-black text-emerald-600">{formatCurrency(stats.latestQuoted.quotedPrice)}</p>
-                  <p className="text-sm text-slate-500">Quoted on {formatRequestDate(stats.latestQuoted.createdAt)}.</p>
+          <div className="grid items-start gap-6 xl:grid-cols-[1fr_300px] xl:gap-8">
+            {/* Main content */}
+            <div className="space-y-5">
+              {/* Tabs */}
+              <div className="flex gap-1 rounded-2xl border border-slate-200 bg-white p-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('enquiries')}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.18em] transition-all ${
+                    activeTab === 'enquiries'
+                      ? 'bg-textMain text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <FileText size={13} />
+                  Enquiries
+                  {!loading && (
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[9px] font-black ${
+                        activeTab === 'enquiries' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      {enquiries.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('quotes')}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.18em] transition-all ${
+                    activeTab === 'quotes'
+                      ? 'bg-textMain text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <ClipboardList size={13} />
+                  Quote Requests
+                  {!loading && (
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[9px] font-black ${
+                        activeTab === 'quotes' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                      }`}
+                    >
+                      {quotes.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* List */}
+              {loading ? (
+                <div className="section-panel py-16 text-center">
+                  <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                    Loading requests...
+                  </p>
                 </div>
+              ) : activeTab === 'enquiries' ? (
+                <EnquiryList items={enquiries} />
               ) : (
-                <p className="mt-4 text-sm leading-6 text-slate-500">No quoted RFQs yet. Pricing will appear here once one of your requests is quoted.</p>
+                <QuoteList items={quotes} />
               )}
             </div>
 
-            <div className="section-panel">
-              <p className="section-eyebrow">Procurement flow</p>
-              <h3 className="mt-1 text-lg font-semibold tracking-tight text-slate-950">How the B2B process works</h3>
-              <div className="mt-4 space-y-3 text-sm leading-6 text-slate-500">
-                <p>1. Browse products and specifications without public pricing.</p>
-                <p>2. Submit an RFQ with quantity and deployment requirements.</p>
-                <p>3. Track status here until the request is quoted or closed.</p>
+            {/* Sidebar */}
+            <aside className="space-y-6 xl:sticky xl:top-32">
+              {/* Account card */}
+              <div className="surface-panel-dark relative overflow-hidden p-6">
+                <div className="absolute right-0 top-0 h-28 w-28 translate-x-14 -translate-y-14 rotate-45 bg-primary opacity-20" />
+                <div className="relative z-10">
+                  <p className="text-xs font-black uppercase tracking-[0.24em] text-primary">Account</p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10">
+                      <User size={18} className="text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-white">{displayName}</p>
+                      <p className="truncate text-[11px] text-white/60">
+                        {userData?.email || sessionUser?.email}
+                      </p>
+                    </div>
+                  </div>
+                  {profileInfo?.company_name && (
+                    <div className="mt-3 border-t border-white/10 pt-3">
+                      <p className="text-[11px] text-white/50 uppercase">Company</p>
+                      <p className="mt-0.5 text-[13px] font-semibold text-white">{profileInfo.company_name}</p>
+                    </div>
+                  )}
+                  <div className="mt-3 border-t border-white/10 pt-3">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+                      Verified partner
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </aside>
+
+              {/* Links */}
+              <div className="section-panel space-y-3">
+                <p className="section-eyebrow">Quick Links</p>
+                <Link
+                  to="/profile"
+                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-primary/30 hover:bg-primary/5"
+                >
+                  <span>Edit Profile</span>
+                  <ArrowRight size={14} className="text-slate-400" />
+                </Link>
+                <Link
+                  to="/products"
+                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-primary/30 hover:bg-primary/5"
+                >
+                  <span>Browse Catalog</span>
+                  <ArrowRight size={14} className="text-slate-400" />
+                </Link>
+              </div>
+
+              {/* How it works */}
+              <div className="section-panel">
+                <p className="section-eyebrow">Procurement flow</p>
+                <h3 className="mt-1 text-base font-semibold tracking-tight text-slate-950">How it works</h3>
+                <div className="mt-3 space-y-2.5 text-[13px] leading-6 text-slate-500">
+                  <p>1. Browse products and specifications without public pricing.</p>
+                  <p>2. Submit an enquiry or request a price quote with quantity.</p>
+                  <p>3. Track status here until your request is responded to.</p>
+                </div>
+              </div>
+            </aside>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ── Enquiry list ── */
+function EnquiryList({ items }: { items: any[] }) {
+  if (!items.length) {
+    return (
+      <div className="section-panel py-14 text-center">
+        <FileText size={38} className="mx-auto mb-4 text-slate-200" />
+        <h3 className="mb-2 text-sm font-bold uppercase tracking-widest text-slate-500">No enquiries yet</h3>
+        <p className="mx-auto max-w-sm text-sm text-slate-400">
+          Browse the catalog and use the enquiry form on a product page to get in touch with our team.
+        </p>
+        <Link
+          to="/products"
+          className="mt-6 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-textMain transition-colors hover:opacity-90"
+        >
+          Explore products <ArrowRight size={13} />
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {items.map((item) => {
+        const st = getStatus(ENQUIRY_STATUS_MAP, item.status);
+        return (
+          <article
+            key={item.id}
+            className="section-panel space-y-4 transition-colors hover:border-primary/40"
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-slate-300">
+                  <Package size={22} />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-semibold tracking-tight text-slate-900">
+                      {item.product_name || 'General Enquiry'}
+                    </h3>
+                    {item.product_id && (
+                      <Link
+                        to={`/product/${item.product_id}`}
+                        className="text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:underline"
+                      >
+                        View product
+                      </Link>
+                    )}
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                    {item.company_name && <span>{item.company_name}</span>}
+                    {item.quantity && (
+                      <>
+                        <span className="hidden h-1 w-1 rounded-full bg-slate-200 sm:inline-block" />
+                        <span>Qty: {item.quantity}</span>
+                      </>
+                    )}
+                    <span className="hidden h-1 w-1 rounded-full bg-slate-200 sm:inline-block" />
+                    <span>#{String(item.id).padStart(5, '0')}</span>
+                    <span className="hidden h-1 w-1 rounded-full bg-slate-200 sm:inline-block" />
+                    <span>{formatDate(item.created_at)}</span>
+                  </div>
+                </div>
+              </div>
+              <div
+                className={`inline-flex shrink-0 items-center gap-1.5 self-start rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] ${st.color}`}
+              >
+                {st.icon}
+                {st.label}
+              </div>
+            </div>
+
+            {item.description && (
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3">
+                <p className="mb-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">
+                  Description
+                </p>
+                <p className="break-words text-sm leading-relaxed text-slate-600">{item.description}</p>
+              </div>
+            )}
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Quote request list ── */
+function QuoteList({ items }: { items: any[] }) {
+  if (!items.length) {
+    return (
+      <div className="section-panel py-14 text-center">
+        <ClipboardList size={38} className="mx-auto mb-4 text-slate-200" />
+        <h3 className="mb-2 text-sm font-bold uppercase tracking-widest text-slate-500">
+          No quote requests yet
+        </h3>
+        <p className="mx-auto max-w-sm text-sm text-slate-400">
+          Open any product and click "Request Price" to submit a quote request with your quantity and
+          requirements.
+        </p>
+        <Link
+          to="/products"
+          className="mt-6 inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-textMain transition-colors hover:opacity-90"
+        >
+          Explore products <ArrowRight size={13} />
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {items.map((item) => {
+        const st = getStatus(QUOTE_STATUS_MAP, item.status);
+        return (
+          <article
+            key={item.id}
+            className="section-panel space-y-4 transition-colors hover:border-primary/40"
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-slate-300">
+                  <ClipboardList size={22} />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-semibold tracking-tight text-slate-900">
+                      {item.product_name || item.product?.name || 'Price Request'}
+                    </h3>
+                    {(item.product_id || item.product?.id) && (
+                      <Link
+                        to={`/product/${item.product_id || item.product?.id}`}
+                        className="text-[10px] font-black uppercase tracking-[0.2em] text-primary hover:underline"
+                      >
+                        View product
+                      </Link>
+                    )}
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                    {item.company_name && <span>{item.company_name}</span>}
+                    {item.quantity && (
+                      <>
+                        <span className="hidden h-1 w-1 rounded-full bg-slate-200 sm:inline-block" />
+                        <span>Qty: {item.quantity}</span>
+                      </>
+                    )}
+                    <span className="hidden h-1 w-1 rounded-full bg-slate-200 sm:inline-block" />
+                    <span>#{String(item.id).padStart(5, '0')}</span>
+                    <span className="hidden h-1 w-1 rounded-full bg-slate-200 sm:inline-block" />
+                    <span>{formatDate(item.created_at || item.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+              <div
+                className={`inline-flex shrink-0 items-center gap-1.5 self-start rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] ${st.color}`}
+              >
+                {st.icon}
+                {st.label}
+              </div>
+            </div>
+
+            {(item.description || item.message) && (
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3">
+                <p className="mb-1 text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">
+                  Message
+                </p>
+                <p className="break-words text-sm leading-relaxed text-slate-600">
+                  {item.description || item.message}
+                </p>
+              </div>
+            )}
+
+            {['quoted', 'quote_sent'].includes(String(item.status).toLowerCase()) && item.quoted_price && (
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                <p className="mb-1 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-700">
+                  Quoted Price
+                </p>
+                <p className="text-2xl font-black text-emerald-700">₹{Number(item.quoted_price).toLocaleString('en-IN')}</p>
+                <p className="mt-1 text-xs text-emerald-800/70">
+                  Pricing is visible only because this request has been quoted.
+                </p>
+              </div>
+            )}
+          </article>
+        );
+      })}
     </div>
   );
 }

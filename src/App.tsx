@@ -42,6 +42,7 @@ const Contact = lazy(() => import('@/pages/store/Contact'));
 const TermsConditions = lazy(() => import('@/pages/store/TermsConditions'));
 const PrivacyPolicy = lazy(() => import('@/pages/store/PrivacyPolicy'));
 const Wishlist = lazy(() => import('@/pages/store/Wishlist'));
+const UserProfile = lazy(() => import('@/pages/store/UserProfile'));
 
 // --- Helper Components ---
 
@@ -119,6 +120,7 @@ function App() {
             <Route path="product/:id" element={<ProductDetails />} />
             <Route path="products/:id" element={<ProductDetails />} />
             <Route path="wishlist" element={<Wishlist />} />
+            <Route path="profile" element={<UserProfile />} />
             <Route path="contact" element={<Contact />} />
             <Route path="terms-conditions" element={<TermsConditions />} />
             <Route path="privacy-policy" element={<PrivacyPolicy />} />

@@ -315,12 +315,20 @@ export const extractAuthData = (payload: any) => {
   return { ...data, token, refreshToken, admin: data?.user || null };
 };
 
+const extractParentId = (parent: any): any => {
+  if (parent == null) return null;
+  if (typeof parent === 'object') return parent.id ?? null;
+  return parent;
+};
+
 export const normalizeCategory = (category: any) => {
   if (!category || typeof category !== 'object') return category;
   const id = category.id ?? category.pk;
+  const parent = extractParentId(category.parent);
   return {
     ...category,
     id,
+    parent,
     name: category.name || 'Unnamed category',
     navbar_group: category.navbar_group || category.navbarGroup || null,
     image: resolveAssetUrl(category.image),
@@ -332,11 +340,13 @@ export const normalizeCategory = (category: any) => {
 
 export const normalizeSubcategory = (subcategory: any, fallbackCategoryId: any = null) => {
   if (!subcategory || typeof subcategory !== 'object') return subcategory;
+  const parentId = extractParentId(subcategory.parent);
   return {
     ...subcategory,
     id: subcategory.id ?? subcategory.pk,
     name: subcategory.name || 'Unnamed subcategory',
-    category_id: subcategory.parent ?? fallbackCategoryId,
+    parent: parentId,
+    category_id: parentId ?? fallbackCategoryId,
     image: resolveAssetUrl(subcategory.image)
   };
 };
@@ -562,7 +572,7 @@ export const authService = {
   setTempPasswordReset: (data: any) => sessionSet(TEMP_PWD_RESET_KEY, data),
   clearTempPasswordReset: () => sessionDel(TEMP_PWD_RESET_KEY),
   clearTempRegistration: () => sessionDel(TEMP_EMAIL_KEY),
-  requestPasswordReset: (payload: any) => publicApi.post('/accounts/password-reset/', payload).then(unwrapResponse),
+  requestPasswordReset: (payload: any) => publicApi.post('/accounts/reset-password/', payload).then(unwrapResponse),
   resendVerificationOTP: (payload?: any) => publicApi.post('/accounts/resend-otp/', payload || {}).then(unwrapResponse),
   verifyOTP: (payload: any) => authApi.verifyOtp(payload),
   confirmPassword: (payload: any) => authApi.verifyOtp(payload),
@@ -585,11 +595,10 @@ const fetchAllPages = async (client: AxiosInstance, url: string, params: any = {
 
 export const catalogApi = {
   getCatalogData: async () => {
-    const [catsRes, brandsRes] = await Promise.all([
-      publicApi.get('/products/categories/'),
+    const [rawAll, brandsRes] = await Promise.all([
+      fetchAllPages(publicApi, '/products/categories/', { page_size: 200 }),
       publicApi.get('/products/brands/')
     ]);
-    const rawAll = extractList(catsRes);
     const brands = normalizeBrands(brandsRes);
 
     // Normalize all categories into a flat list
@@ -848,6 +857,11 @@ export const analyticsApi = {
   getReviewAnalytics: () => api.get('/analytics/reviews/').then(unwrapResponse),
   getWishlistAnalytics: () => api.get('/analytics/wishlists/').then(unwrapResponse),
   getInventoryAnalytics: () => api.get('/inventory/inventory/').then(unwrapResponse),
+};
+
+export const profileApi = {
+  getProfile: () => api.get('/accounts/profile/').then(unwrapResponse),
+  updateProfile: (payload: any) => api.put('/accounts/profile/', payload).then(unwrapResponse),
 };
 
 export const ordersApi = {

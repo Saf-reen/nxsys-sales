@@ -28,7 +28,7 @@ const ForgotPassword = () => {
     setFormError('');
 
     try {
-      await authService.requestPasswordReset(email);
+      await authService.requestPasswordReset({ email });
       showToast({ title: 'OTP Sent', message: 'Check your email for the recovery code.' });
       navigate('/verify-otp', { state: { email } });
     } catch (error) {

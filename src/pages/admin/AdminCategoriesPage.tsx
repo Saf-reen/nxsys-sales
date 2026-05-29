@@ -11,6 +11,7 @@ import {
 } from '@/services';
 import { getCatalogData, getApiErrorMessage, getNormalizedApiError } from '@/services';
 import { showToast } from '@/utils/helpers';
+import { getTopLevelCategories, isTopLevelCategory } from '@/utils/admin';
 import AdminDataTable from '@/components/admin/AdminDataTable';
 import CategoryModal from '@/components/admin/CategoryModal';
 import CategoryDetailModal from '@/components/admin/CategoryDetailModal';
@@ -166,7 +167,7 @@ function AdminCategoriesPage() {
     <div className="space-y-8">
       <AdminPageHeader
         eyebrow="Taxonomy"
-        title={`Categories (${categories.filter(c => !c.parent).length})`}
+        title={`Categories (${getTopLevelCategories(categories).length})`}
         description="Manage top-level catalog groupings and assign each category to the correct navbar section."
         action={
           <button
@@ -212,7 +213,7 @@ function AdminCategoriesPage() {
               width: '35%',
               cellClassName: 'min-w-[240px]',
               render: (category) => {
-                const isSub = !!category.parent;
+                const isSub = !isTopLevelCategory(category);
                 const parent = isSub ? categories.find(c => String(c.id) === String(category.parent)) : null;
                 
                 return (
@@ -297,7 +298,7 @@ function AdminCategoriesPage() {
               ),
             },
           ]}
-          rows={categories.filter(c => !c.parent)}
+          rows={getTopLevelCategories(categories)}
           emptyText="No categories available."
           minWidthClassName="min-w-[1000px]"
         />
@@ -345,7 +346,7 @@ function AdminCategoriesPage() {
           ]}
           rows={(() => {
             const grouped = categories.reduce((acc, cat) => {
-              if (!cat.parent) {
+              if (isTopLevelCategory(cat)) {
                 const group = cat.navbar_group || 'Unassigned / Standalone';
                 if (!acc[group]) acc[group] = [];
                 acc[group].push(cat);

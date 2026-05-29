@@ -138,14 +138,9 @@ const Login = () => {
           invalid={highlightCredentials || Boolean(fieldErrors.username)}
         />
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between px-0.5">
-            <span className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
-              Password <span className="text-rose-400">*</span>
-            </span>
-            <Link to="/forgot-password" className="text-[11px] font-semibold text-primary transition-opacity hover:opacity-80">
-              Forgot password?
-            </Link>
-          </div>
+          <span className="block text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+            Password <span className="text-rose-400">*</span>
+          </span>
           <PasswordInput
             name="password"
             value={formData.password}
@@ -156,6 +151,11 @@ const Login = () => {
             error={fieldErrors.password}
             invalid={highlightCredentials || Boolean(fieldErrors.password)}
           />
+          <p className="px-0.5 text-[12px] text-slate-500">
+            <Link to="/forgot-password" className="font-semibold text-primary transition-opacity hover:opacity-80">
+              Forgot password?
+            </Link>
+          </p>
         </div>
 
         <AuthButton loading={submitting} type="submit" className="mt-4">

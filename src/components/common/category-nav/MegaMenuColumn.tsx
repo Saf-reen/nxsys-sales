@@ -1,22 +1,31 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 
 function NestedMenuItems({ items, onNavigate, level = 0 }) {
+  const location = useLocation();
+
   return (
     <ul className={level === 0 ? 'space-y-3.5' : 'space-y-2.5'}>
-      {items.map((item) => (
+      {items.map((item) => {
+        const itemUrl = new URL(item.path, 'http://x');
+        const hasQuery = itemUrl.search.length > 0;
+
+        return (
         <li key={item.id ?? `${item.name}-${level}`} className="space-y-2">
           <NavLink
             to={item.path}
             end
-            className={({ isActive }) => `block transition-colors ${
-              level === 0
-                ? `text-[14px] font-medium ${
-                    isActive ? 'text-primary' : 'text-textMain hover:text-primary'
-                  }`
-                : `text-[12px] font-normal ${
-                    isActive ? 'text-primary' : 'text-textMain hover:text-primary'
-                  }`
-            }`}
+            className={({ isActive }) => {
+              const active = isActive && (!hasQuery || location.search === itemUrl.search);
+              return `block transition-colors ${
+                level === 0
+                  ? `text-[14px] font-medium ${
+                      active ? 'text-primary' : 'text-textMain hover:text-primary'
+                    }`
+                  : `text-[12px] font-normal ${
+                      active ? 'text-primary' : 'text-textMain hover:text-primary'
+                    }`
+              }`;
+            }}
             onClick={onNavigate}
             style={level ? { paddingLeft: `${level * 12}px` } : undefined}
           >
@@ -27,7 +36,8 @@ function NestedMenuItems({ items, onNavigate, level = 0 }) {
             <NestedMenuItems items={item.children} onNavigate={onNavigate} level={level + 1} />
           ) : null}
         </li>
-      ))}
+        )
+      })}
     </ul>
   );
 }

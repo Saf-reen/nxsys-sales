@@ -69,9 +69,7 @@ function Contact() {
               <div className="min-w-0 space-y-1.5">
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Our Office</p>
                 <p className="text-[15px] font-semibold leading-7 text-slate-800">
-                  First Floor, 1-121/63 Survey No. 63 Part Hotel,<br />
-                  Sitara Grand Backside, Miyapur, Hyderabad,<br />
-                  Telangana, India 500049
+                  Udaya Vensar Apartments, Rd Number 1, Hanuman Nagar, Kothaguda, Hyderabad, Telangana 500084
                 </p>
                 <a
                   href="https://maps.google.com/?q=Miyapur+Hyderabad+Telangana+500049"

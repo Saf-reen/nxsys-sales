@@ -15,18 +15,18 @@ import { useProducts } from '@/hooks/useProducts';
 import { slugify } from '../../utils/helpers';
 
 const contactChannels = [
-  { label: 'Call Sales',   value: '+91 9701314138',       href: 'tel:+919701314138',           Icon: PhoneCall     },
+  { label: 'Call Sales', value: '+91 9701314138', href: 'tel:+919701314138', Icon: PhoneCall },
   // { label: 'WhatsApp',     value: '+91 9701314138',       href: 'https://wa.me/919701314138',   Icon: MessageCircle },
-  { label: 'Email Desk',   value: 'sales@sriainfotech.com', href: 'mailto:sales@sriainfotech.com', Icon: Mail      },
+  { label: 'Email Desk', value: 'sales@sriainfotech.com', href: 'mailto:sales@sriainfotech.com', Icon: Mail },
 ];
 
 const supportLinks = [
-  { label: 'Contact Support',   to: '/contact'          },
-  { label: 'Partner Login',     to: '/login'             },
-  { label: 'Create Account',    to: '/register'          },
-  { label: 'Browse Catalog',    to: '/products'          },
-  { label: 'Terms & Conditions',to: '/terms-conditions'  },
-  { label: 'Privacy Policy',    to: '/privacy-policy'    },
+  { label: 'Contact Support', to: '/contact' },
+  { label: 'Partner Login', to: '/login' },
+  { label: 'Create Account', to: '/register' },
+  { label: 'Browse Catalog', to: '/products' },
+  { label: 'Terms & Conditions', to: '/terms-conditions' },
+  { label: 'Privacy Policy', to: '/privacy-policy' },
 ];
 
 const services = [
@@ -37,10 +37,10 @@ const services = [
 ];
 
 const socialLinks = [
-  { label: 'LinkedIn',   Icon: Linkedin,   to: '/contact' },
-  { label: 'Instagram',  Icon: Instagram,  to: '/contact' },
-  { label: 'Facebook',   Icon: Facebook,   to: '/contact' },
-  { label: 'YouTube',    Icon: Youtube,    to: '/contact' },
+  { label: 'LinkedIn', Icon: Linkedin, to: '/contact' },
+  { label: 'Instagram', Icon: Instagram, to: '/contact' },
+  { label: 'Facebook', Icon: Facebook, to: '/contact' },
+  { label: 'YouTube', Icon: Youtube, to: '/contact' },
 ];
 
 function Footer() {
@@ -124,7 +124,7 @@ function Footer() {
                     Our Office
                   </p>
                   <p className="mt-1 text-[13px] font-semibold text-white/90 leading-relaxed">
-                    First Floor, 1-121/63 Survey No. 63 Part Hotel, Sitara Grand Backside,<br className="hidden sm:block" /> Miyapur, Hyderabad, Telangana, India 500049
+                    Udaya Vensar Apartments, Rd Number 1, Hanuman Nagar,<br className="hidden sm:block" />  Kothaguda, Hyderabad, Telangana India 500084
                   </p>
                 </div>
               </div>
@@ -232,10 +232,10 @@ function Footer() {
             <span className="font-semibold text-primary">SRIA Infotech Pvt Ltd</span>
           </p>
           <div className="flex flex-wrap items-center gap-4">
-            <Link to="/products"           className="transition-colors hover:text-primary">Catalog</Link>
-            <Link to="/contact"            className="transition-colors hover:text-primary">Contact</Link>
-            <Link to="/terms-conditions"   className="transition-colors hover:text-primary">Terms</Link>
-            <Link to="/privacy-policy"     className="transition-colors hover:text-primary">Privacy</Link>
+            <Link to="/products" className="transition-colors hover:text-primary">Catalog</Link>
+            <Link to="/contact" className="transition-colors hover:text-primary">Contact</Link>
+            <Link to="/terms-conditions" className="transition-colors hover:text-primary">Terms</Link>
+            <Link to="/privacy-policy" className="transition-colors hover:text-primary">Privacy</Link>
             <a href="mailto:sales@sriainfotech.com" className="transition-colors hover:text-primary">
               sales@sriainfotech.com
             </a>

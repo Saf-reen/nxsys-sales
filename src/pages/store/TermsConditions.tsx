@@ -23,7 +23,7 @@ function TermsConditions() {
       <div className="container-shell -mt-10 mb-20 sm:-mt-16 sm:mb-32">
         <div className="mx-auto max-w-4xl">
           <div className="rounded-[40px] border border-greyBorder bg-white p-8 shadow-xl shadow-slate-200/50 sm:p-16 text-slate-700 space-y-8">
-            
+
             <p className="text-lg leading-relaxed">
               This website “NxSys - B2B Distribution Portal” is operated by SRIA Infotech Pvt Ltd. By accessing or using this Platform, You agree to comply with and be bound by these Terms & Conditions and our Privacy Policy.
             </p>
@@ -179,7 +179,7 @@ function TermsConditions() {
               <div className="space-y-2">
                 <p><strong>Email:</strong> sales@sriainfotech.com</p>
                 <p><strong>Phone:</strong> +91 97013 14138</p>
-                <p><strong>Address:</strong> First Floor, 1-121/63 Survey No. 63 Part Hotel, Sitara Grand Backside, Miyapur, Hyderabad, Telangana, India 500049</p>
+                <p><strong>Address:</strong> Udaya Vensar Apartments, Rd Number 1, Hanuman Nagar, Kothaguda, Hyderabad, Telangana 500084</p>
               </div>
             </section>
 

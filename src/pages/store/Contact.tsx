@@ -72,7 +72,7 @@ function Contact() {
                   Udaya Vensar Apartments, Rd Number 1, Hanuman Nagar, Kothaguda, Hyderabad, Telangana 500084
                 </p>
                 <a
-                  href="https://maps.google.com/?q=Miyapur+Hyderabad+Telangana+500049"
+                  href="https://maps.app.goo.gl/b9sUaVidUYvMWxkK9?g_st=iw"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-[12px] font-bold text-primary transition-opacity hover:opacity-70"

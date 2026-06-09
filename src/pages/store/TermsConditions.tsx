@@ -177,7 +177,7 @@ function TermsConditions() {
             <section className="space-y-4">
               <h2 className="text-2xl font-bold text-slate-900">15. Contact / Grievance Officer</h2>
               <div className="space-y-2">
-                <p><strong>Email:</strong> sales@sriainfotech.com</p>
+                <p><strong>Email:</strong> sales@nxsysdigital.com</p>
                 <p><strong>Phone:</strong> +91 97013 14138</p>
                 <p><strong>Address:</strong> Udaya Vensar Apartments, Rd Number 1, Hanuman Nagar, Kothaguda, Hyderabad, Telangana 500084</p>
               </div>

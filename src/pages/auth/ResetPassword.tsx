@@ -70,7 +70,12 @@ const ResetPassword = () => {
     setFormError('');
 
     try {
-      await authService.confirmPassword({ email, otp, password: formData.password });
+      await authService.confirmPassword({
+        email,
+        otp,
+        new_password: formData.password,
+        confirm_password: formData.confirmPassword,
+      });
       authService.clearTempPasswordReset();
       authService.clearTempEmail();
       showToast({ title: 'Success', message: 'Password reset successfully. You can now login.' });
@@ -121,7 +126,7 @@ const ResetPassword = () => {
           name="password"
           value={formData.password}
           onChange={handleChange}
-          placeholder="••••••••"
+          placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
           required
           error={errors.password}
           autoComplete="new-password"
@@ -131,7 +136,7 @@ const ResetPassword = () => {
           name="confirmPassword"
           value={formData.confirmPassword}
           onChange={handleChange}
-          placeholder="••••••••"
+          placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
           required
           error={errors.confirmPassword}
           autoComplete="new-password"

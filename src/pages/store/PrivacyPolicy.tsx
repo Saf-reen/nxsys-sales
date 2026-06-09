@@ -192,7 +192,7 @@ function PrivacyPolicy() {
               <h2 className="text-2xl font-bold text-slate-900">XV. Grievance Officer</h2>
               <p>For any privacy concerns:</p>
               <div className="space-y-2">
-                <p><strong>Email:</strong> sales@sriainfotech.com</p>
+                <p><strong>Email:</strong> sales@nxsysdigital.com</p>
                 <p><strong>Phone:</strong> +91 97013 14138</p>
               </div>
             </section>

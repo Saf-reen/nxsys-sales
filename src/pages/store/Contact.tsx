@@ -90,10 +90,10 @@ function Contact() {
               <div className="min-w-0 space-y-1.5">
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Phone</p>
                 <a
-                  href="tel:+919701314138"
+                  href="tel:+919059585039"
                   className="block text-2xl font-black text-slate-900 transition-colors hover:text-primary sm:text-3xl"
                 >
-                  +91 97013 14138
+                  +91 90595 85039
                 </a>
                 <p className="text-[12px] font-medium text-slate-400">Available for calls and WhatsApp</p>
               </div>
@@ -107,10 +107,10 @@ function Contact() {
               <div className="min-w-0 space-y-1.5">
                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Email</p>
                 <a
-                  href="mailto:sales@sriainfotech.com"
+                  href="mailto:sales@nxsysdigital.com"
                   className="block break-all text-xl font-black text-slate-900 transition-colors hover:text-primary sm:text-2xl"
                 >
-                  sales@sriainfotech.com
+                  sales@nxsysdigital.com
                 </a>
                 <p className="text-[12px] font-medium text-slate-400">We respond within 1 business day</p>
               </div>

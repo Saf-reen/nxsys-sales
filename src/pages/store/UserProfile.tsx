@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  User, Lock, Check, ArrowRight, Building2, Phone, Mail, MapPin,
+  User, Check, ArrowRight, Building2, Phone, Mail, MapPin,
   FileText, ClipboardList, Package, AlertCircle, CheckCircle, Clock, XCircle,
 } from 'lucide-react';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
-import OTPInput from '@/components/auth/OTPInput';
 import { authService, profileApi, getNormalizedApiError } from '@/services';
 import { showToast } from '../../utils/helpers';
 
-type PwStep = 'idle' | 'sending' | 'otp' | 'confirming' | 'done';
 type HistoryTab = 'enquiries' | 'quotes';
 
 interface ProfileData {
@@ -68,12 +66,11 @@ function UserProfile() {
   const [historyTab, setHistoryTab] = useState<HistoryTab>('enquiries');
 
   /* change password */
-  const [pwStep, setPwStep] = useState<PwStep>('idle');
-  const [otp, setOtp] = useState('');
-  const [otpError, setOtpError] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [pwErrors, setPwErrors] = useState<Record<string, string>>({});
+  const [pwOld, setPwOld] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwSubmitting, setPwSubmitting] = useState(false);
+  const [pwDone, setPwDone] = useState(false);
 
   useEffect(() => {
     if (!authService.isAuthenticated()) return;
@@ -119,7 +116,7 @@ function UserProfile() {
     } catch (err) {
       const n = getNormalizedApiError(err, { fallbackMessage: 'Failed to update profile.' });
       const fe: Record<string, string> = {};
-      Object.entries(n.fieldErrors).forEach(([k, v]) => { fe[k] = Array.isArray(v) ? v[0] : String(v); });
+      Object.entries(n.fieldErrors || {}).forEach(([k, v]) => { fe[k] = Array.isArray(v) ? v[0] : String(v); });
       setProfileErrors(fe);
       if (!Object.keys(fe).length) showToast({ title: 'Error', message: n.message, type: 'error' });
     } finally {
@@ -127,43 +124,30 @@ function UserProfile() {
     }
   };
 
-  const handleSendOTP = async () => {
-    setPwStep('sending');
-    setPwErrors({});
-    try {
-      await authService.requestPasswordReset({ email: profileData.email });
-      showToast({ title: 'OTP Sent', message: `A reset code was sent to ${profileData.email}` });
-      setPwStep('otp');
-    } catch (err) {
-      const n = getNormalizedApiError(err, { fallbackMessage: 'Failed to send reset code.' });
-      setPwErrors({ send: n.message });
-      setPwStep('idle');
-    }
-  };
-
-  const handleConfirmPassword = async (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs: Record<string, string> = {};
-    if (otp.length < 6)                    errs.otp            = 'Enter the full 6-digit code.';
-    if (newPassword.length < 6)            errs.newPassword    = 'Password must be at least 6 characters.';
-    if (newPassword !== confirmPassword)   errs.confirmPassword = 'Passwords do not match.';
+    if (!pwOld)           errs.old = 'Enter your current password.';
+    if (pwNew.length < 6) errs.new = 'Password must be at least 6 characters.';
     if (Object.keys(errs).length) { setPwErrors(errs); return; }
-    setPwStep('confirming');
+    setPwSubmitting(true);
     try {
-      await authService.confirmPassword({ email: profileData.email, otp, password: newPassword });
+      await authService.resetPassword({ old_password: pwOld, new_password: pwNew });
       showToast({ title: 'Password Changed', message: 'Your password has been updated successfully.' });
-      setPwStep('done');
-      setOtp(''); setNewPassword(''); setConfirmPassword('');
+      setPwDone(true);
+      setPwOld(''); setPwNew(''); setPwErrors({});
     } catch (err) {
-      const n = getNormalizedApiError(err, { fallbackMessage: 'Failed to reset password.' });
-      setPwErrors({ confirm: n.message });
-      setPwStep('otp');
+      const n = getNormalizedApiError(err, { fallbackMessage: 'Failed to change password.' });
+      const fe: Record<string, string> = {};
+      if (n.fieldErrors) {
+        if (n.fieldErrors.old_password) fe.old = Array.isArray(n.fieldErrors.old_password) ? n.fieldErrors.old_password[0] : String(n.fieldErrors.old_password);
+        if (n.fieldErrors.new_password) fe.new = Array.isArray(n.fieldErrors.new_password) ? n.fieldErrors.new_password[0] : String(n.fieldErrors.new_password);
+      }
+      if (!Object.keys(fe).length && n.message) fe.new = n.message;
+      setPwErrors(fe);
+    } finally {
+      setPwSubmitting(false);
     }
-  };
-
-  const resetPwFlow = () => {
-    setPwStep('idle'); setOtp(''); setOtpError('');
-    setNewPassword(''); setConfirmPassword(''); setPwErrors({});
   };
 
   const inp = (err?: boolean) =>
@@ -264,45 +248,29 @@ function UserProfile() {
                       <h2 className="mt-1 text-xl font-semibold tracking-tight text-slate-950">Change Password</h2>
                     </div>
 
-                    {pwStep === 'done' ? (
+                    {pwDone ? (
                       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center">
                         <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
                           <Check size={18} className="text-emerald-600" />
                         </div>
                         <p className="text-sm font-semibold text-emerald-800">Password updated successfully!</p>
-                        <button type="button" onClick={resetPwFlow} className="mt-3 text-[11px] font-semibold text-emerald-700 underline">Change again</button>
-                      </div>
-                    ) : pwStep === 'idle' || pwStep === 'sending' ? (
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-sm text-slate-500">A one-time code will be sent to <strong>{profileData.email}</strong> to verify your identity before updating the password.</p>
-                        <div className="shrink-0">
-                          {pwErrors.send && <p className="mb-2 text-[12px] font-semibold text-rose-500">{pwErrors.send}</p>}
-                          <button type="button" onClick={handleSendOTP} disabled={pwStep === 'sending'} className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border-2 border-textMain px-5 py-2.5 text-[11px] font-black uppercase tracking-widest text-textMain transition-all hover:bg-textMain hover:text-white disabled:opacity-50">
-                            {pwStep === 'sending' ? <><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />Sending...</> : <><Lock size={13} />Send Reset Code</>}
-                          </button>
-                        </div>
+                        <button type="button" onClick={() => setPwDone(false)} className="mt-3 text-[11px] font-semibold text-emerald-700 underline">Change again</button>
                       </div>
                     ) : (
-                      <form onSubmit={handleConfirmPassword} className="space-y-5">
-                        <p className="text-[12px] text-slate-500">Enter the 6-digit code sent to <strong>{profileData.email}</strong> and choose a new password.</p>
-                        <OTPInput value={otp} onChange={(v: string) => { setOtp(v); if (otpError) setOtpError(''); if (pwErrors.otp) setPwErrors(p => ({ ...p, otp: '' })); }} error={pwErrors.otp || otpError} invalid={Boolean(pwErrors.otp || otpError)} />
-                        <div className="grid gap-4 sm:grid-cols-2">
-                          <div className="space-y-1.5">
-                            <label className="block text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">New Password <span className="text-rose-400">*</span></label>
-                            <input type="password" value={newPassword} onChange={e => { setNewPassword(e.target.value); if (pwErrors.newPassword) setPwErrors(p => ({ ...p, newPassword: '' })); }} placeholder="••••••••" autoComplete="new-password" className={inp(Boolean(pwErrors.newPassword))} />
-                            {pwErrors.newPassword && <p className="text-[11px] font-semibold text-rose-500">{pwErrors.newPassword}</p>}
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="block text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Confirm Password <span className="text-rose-400">*</span></label>
-                            <input type="password" value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); if (pwErrors.confirmPassword) setPwErrors(p => ({ ...p, confirmPassword: '' })); }} placeholder="••••••••" autoComplete="new-password" className={inp(Boolean(pwErrors.confirmPassword))} />
-                            {pwErrors.confirmPassword && <p className="text-[11px] font-semibold text-rose-500">{pwErrors.confirmPassword}</p>}
-                          </div>
+                      <form onSubmit={handleChangePassword} className="space-y-4">
+                        <div className="space-y-1.5">
+                          <label className="block text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Current Password <span className="text-rose-400">*</span></label>
+                          <input type="password" value={pwOld} onChange={e => { setPwOld(e.target.value); if (pwErrors.old) setPwErrors(p => ({ ...p, old: '' })); }} placeholder="••••••••" autoComplete="current-password" className={inp(Boolean(pwErrors.old))} />
+                          {pwErrors.old && <p className="text-[11px] font-semibold text-rose-500">{pwErrors.old}</p>}
                         </div>
-                        {pwErrors.confirm && <p className="text-[12px] font-semibold text-rose-500">{pwErrors.confirm}</p>}
-                        <div className="flex gap-3">
-                          <button type="button" onClick={resetPwFlow} className="flex-1 rounded-full border border-slate-200 py-2.5 text-[11px] font-black uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-50">Cancel</button>
-                          <button type="submit" disabled={pwStep === 'confirming'} className="flex-1 inline-flex items-center justify-center gap-2 rounded-full bg-textMain py-2.5 text-[11px] font-black uppercase tracking-widest text-white transition-colors hover:bg-black disabled:opacity-50">
-                            {pwStep === 'confirming' ? <><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />Updating...</> : 'Update Password'}
+                        <div className="space-y-1.5">
+                          <label className="block text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">New Password <span className="text-rose-400">*</span></label>
+                          <input type="password" value={pwNew} onChange={e => { setPwNew(e.target.value); if (pwErrors.new) setPwErrors(p => ({ ...p, new: '' })); }} placeholder="••••••••" autoComplete="new-password" className={inp(Boolean(pwErrors.new))} />
+                          {pwErrors.new && <p className="text-[11px] font-semibold text-rose-500">{pwErrors.new}</p>}
+                        </div>
+                        <div className="flex justify-end">
+                          <button type="submit" disabled={pwSubmitting} className="inline-flex items-center justify-center gap-2 rounded-full bg-textMain px-7 py-3 text-[11px] font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-black disabled:opacity-50">
+                            {pwSubmitting ? <><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />Updating...</> : 'Reset Password'}
                           </button>
                         </div>
                       </form>

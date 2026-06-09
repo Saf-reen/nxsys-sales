@@ -260,6 +260,96 @@ function AdminProductsPage() {
     showToast({ title: 'Export complete', message: 'Product catalog exported to CSV.' });
   };
 
+  const handleExportExcel = async () => {
+    if (products.length === 0) {
+      showToast({ title: 'No products', message: 'There are no products to export.', type: 'error' });
+      return;
+    }
+
+    try {
+      const ExcelJS = (await import('exceljs')).default;
+      const { saveAs } = await import('file-saver');
+
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Products');
+
+      // Define headers
+      const headers = [
+        'ID', 'Name', 'Description', 'Brand', 'Category', 'Subcategory', 'Price', 'Currency', 'Stock', 'SKU', 'MPN', 'Images', 'First Image URL'
+      ];
+      ws.addRow(headers);
+
+      // Add rows
+      for (const p of products) {
+        const brand = p.brand_name || p.brandName || getBrandName(p.brand, brands) || '';
+        const category = p.category_name || getCategoryName(p.category, categories) || '';
+        const subcategory = p.subcategory_name || p.subcategory || p.subcategoryData?.name || '';
+        const images = Array.isArray(p.images) ? p.images : (p.image ? [p.image] : (p.product_image ? [p.product_image] : []));
+        const imageUrls = images.map(img => {
+          if (!img) return '';
+          if (typeof img === 'string') return img;
+          return img?.image || img?.url || img?.image_url || img?.src || '';
+        }).filter(Boolean);
+
+        const rowValues = [
+          p.id,
+          p.name,
+          p.description || p.long_description || '',
+          brand,
+          category,
+          subcategory,
+          p.price ?? '',
+          p.currency || '',
+          p.stock ?? '',
+          p.sku || '',
+          p.mpn || '',
+          imageUrls.join(' '),
+          imageUrls[0] || ''
+        ];
+
+        ws.addRow(rowValues);
+      }
+
+      // Attempt to embed first image per-row (best-effort; external URLs need fetch).
+      // We'll fetch image binary data and add it to workbook; ignore failures.
+      const rows = ws.getRows(2, products.length) || [];
+      for (let i = 0; i < products.length; i++) {
+        const p = products[i];
+        const images = Array.isArray(p.images) ? p.images : (p.image ? [p.image] : (p.product_image ? [p.product_image] : []));
+        const firstUrl = images && images.length ? (typeof images[0] === 'string' ? images[0] : (images[0]?.image || images[0]?.url || images[0]?.image_url || images[0]?.src)) : null;
+        if (!firstUrl) continue;
+        try {
+          const res = await fetch(firstUrl);
+          if (!res.ok) continue;
+          const blob = await res.blob();
+          const arrayBuffer = await blob.arrayBuffer();
+          const ext = ((blob.type || 'image/png').split('/')[1] || 'png') as 'png' | 'jpeg' | 'gif';
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const imageId = wb.addImage({ buffer: new Uint8Array(arrayBuffer) as any, extension: ext });
+          const rowNumber = 2 + i;
+          ws.addImage(imageId, {
+            tl: { col: 12, row: rowNumber - 1 },
+            ext: { width: 120, height: 90 }
+          });
+        } catch (err) {
+          // ignore image embedding errors
+        }
+      }
+
+      // Auto-width columns
+      ws.columns.forEach((col) => {
+        col.width = Math.min(40, Math.max(12, (col.header || '').toString().length + 6));
+      });
+
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `products_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+      showToast({ title: 'Export complete', message: 'Product catalog exported to Excel.' });
+    } catch (err) {
+      showToast({ title: 'Export failed', message: getApiErrorMessage(err, 'Unable to export to Excel'), type: 'error' });
+    }
+  };
+
   const handleImportClick = () => fileInputRef.current?.click();
   const handleImageFilesClick = () => imageFilesInputRef.current?.click();
 
@@ -356,6 +446,14 @@ function AdminProductsPage() {
               className="admin-btn-secondary max-sm:w-full !text-[11px]"
             >
               Export CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExportExcel()}
+              className="admin-btn-secondary max-sm:w-full !text-[11px]"
+              title="Export products to Excel (includes first image URL and embeds image when available)"
+            >
+              Export Excel
             </button>
             <button
               type="button"

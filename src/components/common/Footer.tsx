@@ -8,6 +8,7 @@ import {
   Mail,
   MapPin,
   MessageCircle,
+  X,
   PhoneCall,
   Youtube,
 } from 'lucide-react';
@@ -15,9 +16,10 @@ import { useProducts } from '@/hooks/useProducts';
 import { slugify } from '../../utils/helpers';
 
 const contactChannels = [
+  { label: 'Call Sales', value: '+91 9059585039', href: 'tel:+919059585039', Icon: PhoneCall },
   { label: 'Call Sales', value: '+91 9701314138', href: 'tel:+919701314138', Icon: PhoneCall },
   // { label: 'WhatsApp',     value: '+91 9701314138',       href: 'https://wa.me/919701314138',   Icon: MessageCircle },
-  { label: 'Email Desk', value: 'sales@sriainfotech.com', href: 'mailto:sales@sriainfotech.com', Icon: Mail },
+  { label: 'Email Desk', value: 'sales@nxsysdigital.com', href: 'mailto:sales@nxsysdigital.com', Icon: Mail },
 ];
 
 const supportLinks = [
@@ -37,10 +39,11 @@ const services = [
 ];
 
 const socialLinks = [
-  { label: 'LinkedIn', Icon: Linkedin, to: '/contact' },
-  { label: 'Instagram', Icon: Instagram, to: '/contact' },
-  { label: 'Facebook', Icon: Facebook, to: '/contact' },
-  { label: 'YouTube', Icon: Youtube, to: '/contact' },
+  { label: 'LinkedIn', Icon: Linkedin, to: 'https://www.linkedin.com/company/nxsys-digital/' },
+  { label: 'Instagram', Icon: Instagram, to: 'https://www.instagram.com/nxsysdigital/' },
+  { label: 'Facebook', Icon: Facebook, to: 'https://www.facebook.com/profile.php?id=61590303994785' },
+  { label: 'YouTube', Icon: Youtube, to: 'https://www.youtube.com/channel/UCMI2XkhDXuTa4nAsYi0c4Jw' },
+  { label: 'X', Icon: X, to: 'https://x.com/nxsysdigital' }
 ];
 
 function Footer() {
@@ -206,6 +209,7 @@ function Footer() {
                   <Link
                     key={label}
                     to={to}
+                    target= '_blank'
                     aria-label={label}
                     className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-slate-400 transition-all hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
                   >
@@ -236,8 +240,8 @@ function Footer() {
             <Link to="/contact" className="transition-colors hover:text-primary">Contact</Link>
             <Link to="/terms-conditions" className="transition-colors hover:text-primary">Terms</Link>
             <Link to="/privacy-policy" className="transition-colors hover:text-primary">Privacy</Link>
-            <a href="mailto:sales@sriainfotech.com" className="transition-colors hover:text-primary">
-              sales@sriainfotech.com
+            <a href="mailto:sales@nxsysdigital.com" className="transition-colors hover:text-primary">
+              sales@nxsysdigital.com
             </a>
           </div>
         </div>

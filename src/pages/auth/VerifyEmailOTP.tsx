@@ -102,7 +102,7 @@ const VerifyEmailOTP = () => {
     <AuthLayout
       badge="Verification"
       title="Verify your email"
-      subtitle={`We’ve sent a 6-digit code to ${email}`}
+      subtitle={`Weï¿½ve sent a 6-digit code to ${email}`}
       imageText="Secure your account."
       imageSubtitle="Enter the verification code sent to your email to activate your account."
     >

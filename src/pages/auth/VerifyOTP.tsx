@@ -37,7 +37,7 @@ const VerifyOTP = () => {
     setError('');
 
     try {
-      await authService.verifyOTP({ email, otp });
+      await authService.verifyResetOTP({ email, otp });
       authService.setTempPasswordReset({ email, otp });
       showToast({ title: 'Code Verified', message: 'Now you can create your new password.' });
       navigate('/reset-password', { state: { email, otp } });
@@ -66,9 +66,9 @@ const VerifyOTP = () => {
     <AuthLayout
       badge="Verification"
       title="Enter Reset Code"
-      subtitle={`We’ve sent a 6-digit code to ${email}`}
+      subtitle={`Weï¿½ve sent a 6-digit code to ${email}`}
       imageText="Verify identity."
-      imageSubtitle="For your security, we’ve sent a verification code to your email. Enter it here to reset your password."
+      imageSubtitle="For your security, weï¿½ve sent a verification code to your email. Enter it here to reset your password."
     >
       <div className="space-y-8">
         <OTPInput value={otp} onChange={handleOtpChange} error={error} invalid={Boolean(error)} />

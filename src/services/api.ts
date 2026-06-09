@@ -538,6 +538,10 @@ export const authApi = {
   register: (payload: any) => publicApi.post('/accounts/register/', payload).then(unwrapResponse),
   login: (payload: any) => publicApi.post('/accounts/login/', payload),
   verifyOtp: (payload: any) => publicApi.post('/accounts/verify-otp/', payload).then(unwrapResponse),
+  requestPasswordReset: (payload: any) => publicApi.post('/accounts/forgot-password/', payload).then(unwrapResponse),
+  verifyResetOtp: (payload: any) => publicApi.post('/accounts/verify-reset-otp/', payload).then(unwrapResponse),
+  confirmResetPassword: (payload: any) => publicApi.post('/accounts/confirm-password/', payload).then(unwrapResponse),
+  resetPasswordAuthenticated: (payload: any) => api.post('/accounts/reset-password/', payload).then(unwrapResponse),
   logout: (payload: any) => api.post('/accounts/logout/', payload).then(unwrapResponse),
 };
 
@@ -572,10 +576,14 @@ export const authService = {
   setTempPasswordReset: (data: any) => sessionSet(TEMP_PWD_RESET_KEY, data),
   clearTempPasswordReset: () => sessionDel(TEMP_PWD_RESET_KEY),
   clearTempRegistration: () => sessionDel(TEMP_EMAIL_KEY),
-  requestPasswordReset: (payload: any) => publicApi.post('/accounts/reset-password/', payload).then(unwrapResponse),
+  requestPasswordReset: (payload: any) => authApi.requestPasswordReset(payload),
   resendVerificationOTP: (payload?: any) => publicApi.post('/accounts/resend-otp/', payload || {}).then(unwrapResponse),
   verifyOTP: (payload: any) => authApi.verifyOtp(payload),
-  confirmPassword: (payload: any) => authApi.verifyOtp(payload),
+  // For password-reset flows
+  verifyResetOTP: (payload: any) => authApi.verifyResetOtp(payload),
+  confirmPassword: (payload: any) => authApi.confirmResetPassword(payload),
+  // Authenticated change (old + new)
+  resetPassword: (payload: any) => authApi.resetPasswordAuthenticated(payload),
   verifyAdminAccess: async () => authSessionStorage.getUser(),
 };
 

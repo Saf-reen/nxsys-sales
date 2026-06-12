@@ -105,7 +105,7 @@ function ProductGallery({ images = [] as any[], alt = 'Product image' }: { image
               onClick={() => setSelectedImage(image)}
               className={`group relative h-[56px] w-[56px] shrink-0 overflow-hidden rounded-lg border-2 transition-all duration-200 lg:h-[64px] lg:w-[64px] ${
                 activeImage === image
-                  ? 'border-primary shadow-[0_0_0_2px_rgba(251,198,29,0.2)]'
+                  ? 'border-primary shadow-[0_0_0_2px_rgba(48,149,248,0.2)]'
                   : 'border-slate-100 bg-white hover:border-primary/40'
               }`}
             >

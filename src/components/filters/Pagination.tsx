@@ -43,7 +43,7 @@ function Pagination({ currentPage, totalPages, onPageChange }) {
             onClick={() => onPageChange(page)}
             className={`h-10 w-10 rounded-xl text-sm font-bold transition-all sm:h-11 sm:w-11 ${
               page === currentPage
-                ? 'bg-primary text-textMain shadow-[0_4px_12px_rgba(251,198,29,0.3)]'
+                ? 'bg-primary text-textMain shadow-[0_4px_12px_rgba(48,149,248,0.3)]'
                 : 'border border-slate-200 bg-white text-slate-600 shadow-sm hover:border-slate-300 hover:bg-slate-50'
             }`}
           >

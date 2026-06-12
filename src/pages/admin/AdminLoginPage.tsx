@@ -78,14 +78,14 @@ function AdminLoginPage() {
 
         {/* Backgrounds */}
         <div className="pointer-events-none absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
-        <div className="pointer-events-none absolute -top-60 -left-40 h-[600px] w-[600px] rounded-full blur-[130px]" style={{ background: 'rgba(251,198,29,0.07)' }} />
+        <div className="pointer-events-none absolute -top-60 -left-40 h-[600px] w-[600px] rounded-full blur-[130px]" style={{ background: 'rgba(48,149,248,0.07)' }} />
         <div className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full blur-[100px]" style={{ background: 'rgba(99,102,241,0.06)' }} />
         <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
 
         {/* Top — brand + headline */}
         <div className="relative space-y-7">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-[0_4px_16px_rgba(251,198,29,0.3)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-[0_4px_16px_rgba(48,149,248,0.3)]">
               <LayoutDashboard size={19} className="text-textMain" />
             </div>
             <div>
@@ -203,7 +203,7 @@ function AdminLoginPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="group flex w-full min-h-[52px] items-center justify-center gap-2.5 rounded-full bg-primary text-[12px] font-black uppercase tracking-[0.2em] text-textMain shadow-[0_4px_20px_rgba(251,198,29,0.35)] transition-all hover:shadow-[0_8px_28px_rgba(251,198,29,0.4)] hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              className="group flex w-full min-h-[52px] items-center justify-center gap-2.5 rounded-full bg-primary text-[12px] font-black uppercase tracking-[0.2em] text-textMain shadow-[0_4px_20px_rgba(48,149,248,0.35)] transition-all hover:shadow-[0_8px_28px_rgba(48,149,248,0.4)] hover:opacity-95 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? 'Signing in…' : 'Sign In'}
               {!submitting && <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />}

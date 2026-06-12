@@ -61,7 +61,7 @@ function HeroBanner({ slides = [] }: { slides?: any[] }) {
           <div className="relative z-20 flex flex-col justify-center h-full max-w-[1400px] mx-auto px-5 md:px-12 lg:px-20 w-full">
             <div className="max-w-[480px] text-left transition-all duration-700 transform translate-y-0 opacity-100">
               {activeSlide.eyebrow && (
-                <p className="text-[#f56900] text-[12px] md:text-sm font-semibold tracking-wide mb-2 md:mb-3">
+                <p className="text-[#3095F8] text-[12px] md:text-sm font-semibold tracking-wide mb-2 md:mb-3">
                   {activeSlide.eyebrow}
                 </p>
               )}

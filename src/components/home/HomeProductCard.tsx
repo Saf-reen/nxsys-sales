@@ -9,7 +9,7 @@ function HomeProductCard({ product }) {
   return (
     <Link
       to={`/products/${product.id}`}
-      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_2px_10px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_16px_40px_rgba(251,198,29,0.14)]"
+      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_2px_10px_rgba(15,23,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_16px_40px_rgba(48,149,248,0.14)]"
     >
       {/* Image area */}
       <div className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100/50">

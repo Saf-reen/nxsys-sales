@@ -95,14 +95,14 @@ function Footer() {
               <div className="grid items-start gap-3 grid-cols-2">
                 {contactChannels.map(({ label, value, href, Icon }, idx) => (
                   <a
-                    key={label}
+                    key={href}
                     href={href}
                     aria-label={label}
                     target={href.startsWith('http') ? '_blank' : undefined}
                     rel={href.startsWith('http') ? 'noreferrer' : undefined}
                     className={`group flex items-start gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.04] p-4 transition-all duration-200 hover:border-primary/40 hover:bg-white/[0.07] ${idx === 2 ? 'col-span-2' : ''}`}
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary shadow-[0_4px_12px_rgba(251,198,29,0.25)] text-textMain">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary shadow-[0_4px_12px_rgba(48,149,248,0.25)] text-textMain">
                       <Icon size={17} />
                     </span>
                     <div className="min-w-0">
@@ -119,7 +119,7 @@ function Footer() {
 
               {/* Office Address */}
               <div className="flex items-start gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.04] p-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary shadow-[0_4px_12px_rgba(251,198,29,0.25)] text-textMain">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary shadow-[0_4px_12px_rgba(48,149,248,0.25)] text-textMain">
                   <MapPin size={17} />
                 </span>
                 <div className="min-w-0">

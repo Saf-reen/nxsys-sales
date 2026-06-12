@@ -91,7 +91,7 @@ function TopHeader({ profile, handleLogout }) {
   };
 
   return (
-    <div className="relative z-[70] border-b border-slate-100 bg-white">
+    <div className="relative z-[70] border-b border-slate-900 bg-black">
       <div className="container-shell py-3 lg:py-4">
         <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center lg:gap-6 xl:gap-10">
 
@@ -99,7 +99,8 @@ function TopHeader({ profile, handleLogout }) {
           <div className="flex items-center justify-between w-full lg:w-auto">
             <NavLink to="/" aria-label="Home" className="group flex shrink-0 items-center">
               <img
-                src={logo}
+                // src={logo}
+                src='/nxd-t.png'
                 alt="Nx Sys Distribution Logo"
                 className="h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.02] lg:h-[60px]"
                 width="240"
@@ -111,7 +112,7 @@ function TopHeader({ profile, handleLogout }) {
             <div className="flex items-center gap-2 lg:hidden">
               <Link
                 to="/wishlist"
-                className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-textMain transition-colors hover:bg-slate-50"
+                className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 text-white transition-colors hover:bg-white/10"
                 aria-label="Wishlist"
               >
                 <Heart size={17} />
@@ -125,13 +126,13 @@ function TopHeader({ profile, handleLogout }) {
                 <div className="flex items-center gap-1.5">
                   <Link
                     to="/login"
-                    className="px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-textMain transition-colors hover:text-primary"
+                    className="px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-white transition-colors hover:text-primary"
                   >
                     Login
                   </Link>
                   <Link
                     to="/register"
-                    className="rounded-lg bg-textMain px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-white transition-colors hover:bg-black"
+                    className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-white transition-colors hover:opacity-90"
                   >
                     Register
                   </Link>
@@ -140,7 +141,7 @@ function TopHeader({ profile, handleLogout }) {
                 <div className="flex items-center gap-1.5">
                   <Link
                     to={isAdminUser(profile) ? '/admin' : '/profile'}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-textMain transition-colors hover:bg-slate-50"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 text-white transition-colors hover:bg-white/10"
                     title={profile.name}
                   >
                     <User size={16} />
@@ -148,7 +149,7 @@ function TopHeader({ profile, handleLogout }) {
                   <button
                     onClick={handleLogout}
                     aria-label="Sign Out"
-                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-textMain transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-500"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/20 text-white transition-colors hover:border-rose-400 hover:bg-rose-500/20 hover:text-rose-300"
                   >
                     <LogOut size={16} />
                   </button>
@@ -161,10 +162,10 @@ function TopHeader({ profile, handleLogout }) {
           <div ref={searchContainerRef} className="relative min-w-0 w-full lg:order-2">
             <form
               onSubmit={handleSearchSubmit}
-              className="group relative flex min-h-[44px] lg:min-h-[50px] w-full overflow-hidden rounded-full border-2 border-slate-200 bg-slate-50/80 transition-all duration-300 focus-within:border-primary focus-within:bg-white focus-within:shadow-[0_0_0_4px_rgba(251,198,29,0.12)]"
+              className="group relative flex min-h-[44px] lg:min-h-[50px] w-full overflow-hidden rounded-full border-2 border-white/20 bg-white/10 transition-all duration-300 focus-within:border-primary focus-within:bg-white/15 focus-within:shadow-[0_0_0_4px_rgba(48,149,248,0.12)]"
             >
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
-                <Search size={15} className="text-slate-400 transition-colors group-focus-within:text-primary" />
+                <Search size={15} className="text-white/50 transition-colors group-focus-within:text-primary" />
               </div>
               <input
                 value={searchTerm}
@@ -175,11 +176,11 @@ function TopHeader({ profile, handleLogout }) {
                 onFocus={() => { if (searchTerm.trim().length > 0) setIsDropdownOpen(true); }}
                 type="text"
                 placeholder="Search products, brands, SKUs..."
-                className="min-w-0 flex-1 bg-transparent py-2 pl-11 pr-3 text-[13px] font-medium text-textMain placeholder:text-slate-400 focus:outline-none"
+                className="min-w-0 flex-1 bg-transparent py-2 pl-11 pr-3 text-[13px] font-medium text-white placeholder:text-white/50 focus:outline-none"
               />
               <button
                 type="submit"
-                className="shrink-0 self-stretch rounded-r-full bg-textMain px-5 lg:px-8 text-[10px] font-black uppercase tracking-[0.14em] text-white transition-colors hover:bg-black"
+                className="shrink-0 self-stretch rounded-r-full bg-primary px-5 lg:px-8 text-[10px] font-black uppercase tracking-[0.14em] text-white transition-colors hover:opacity-90"
               >
                 Search
               </button>
@@ -276,7 +277,7 @@ function TopHeader({ profile, handleLogout }) {
           <div className="hidden lg:flex lg:items-center lg:gap-3 lg:order-3">
             <Link
               to="/wishlist"
-              className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-textMain shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50"
+              className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white shadow-sm transition-all hover:border-white/30 hover:bg-white/15"
               aria-label="Wishlist"
             >
               <Heart size={17} />
@@ -291,13 +292,13 @@ function TopHeader({ profile, handleLogout }) {
               <>
                 <NavLink
                   to="/register"
-                  className="inline-flex h-11 items-center justify-center rounded-full bg-textMain px-7 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:bg-black min-w-[120px]"
+                  className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-7 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:opacity-90 min-w-[120px]"
                 >
                   Register
                 </NavLink>
                 <NavLink
                   to="/login"
-                  className="inline-flex h-11 items-center justify-center rounded-full border-2 border-textMain bg-white px-7 text-[11px] font-black uppercase tracking-widest text-textMain transition-all hover:bg-textMain hover:text-white min-w-[120px]"
+                  className="inline-flex h-11 items-center justify-center rounded-full border-2 border-white/30 bg-white/10 px-7 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:bg-white/20 min-w-[120px]"
                 >
                   Login
                 </NavLink>
@@ -306,15 +307,15 @@ function TopHeader({ profile, handleLogout }) {
               <>
                 <Link
                   to={isAdminUser(profile) ? '/admin' : '/profile'}
-                  className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-[11px] font-bold uppercase tracking-widest text-textMain transition-colors hover:bg-slate-50 max-w-[200px]"
+                  className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2.5 text-[11px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-white/20 max-w-[200px]"
                 >
-                  <User size={15} className="shrink-0 text-slate-500" />
+                  <User size={15} className="shrink-0 text-white/70" />
                   <span className="truncate">{profile.name || 'Account'}</span>
                 </Link>
                 <button
                   onClick={handleLogout}
                   aria-label="Sign Out"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-textMain px-5 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:bg-black"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-5 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:opacity-90"
                 >
                   <LogOut size={15} />
                   <span>Sign Out</span>

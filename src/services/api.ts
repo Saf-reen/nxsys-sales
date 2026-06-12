@@ -664,8 +664,29 @@ export const catalogApi = {
     };
   },
   getProducts: (params: any = {}, cat: any = {}) =>
-    fetchAllPages(publicApi, '/products/products/', cleanSearchParams({ page_size: 200, ...params }))
-      .then(allProducts => allProducts.map((p: any) => normalizeProduct(p, cat)).filter(Boolean)),
+    publicApi
+      .get('/products/products/', {
+        params: { ...cleanSearchParams(params), page_size: 20 },
+      })
+      .then((res: any) => {
+        const data = unwrapResponse(res);
+        return {
+          results: extractList(res).map((p: any) => normalizeProduct(p, cat)).filter(Boolean),
+          next: data?.next || null,
+          count: data?.count || 0,
+        };
+      }),
+  getProductsPage: (url: string, cat: any = {}) =>
+    publicApi
+      .get(url)
+      .then((res: any) => {
+        const data = unwrapResponse(res);
+        return {
+          results: extractList(res).map((p: any) => normalizeProduct(p, cat)).filter(Boolean),
+          next: data?.next || null,
+          count: data?.count || 0,
+        };
+      }),
   getProductById: (id: any, cat: any = {}) => publicApi.get(`/products/products/${id}/`).then(res => {
     const data = unwrapResponse(res);
     if (!data) return null;
@@ -878,6 +899,7 @@ export const ordersApi = {
 
 // --- EXPORTS ---
 export const getProducts = catalogApi.getProducts.bind(catalogApi);
+export const getProductsPage = catalogApi.getProductsPage.bind(catalogApi);
 export const getProductById = catalogApi.getProductById.bind(catalogApi);
 export const getProductSpecifications = catalogApi.getProductSpecifications.bind(catalogApi);
 export const createSpecification = catalogApi.createSpecification.bind(catalogApi);

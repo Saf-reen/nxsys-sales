@@ -1,16 +1,41 @@
-import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Home, ChevronRight, LayoutGrid, List, Search, SlidersHorizontal, X, ArrowRight } from 'lucide-react';
+import {
+  startTransition,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
+import {
+  LayoutGrid,
+  List,
+  Search,
+  SlidersHorizontal,
+  X,
+} from 'lucide-react';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import ProductGrid from '@/components/product/ProductGrid';
 import FilterSidebar from '@/components/filters/FilterSidebar';
-import Pagination from '@/components/filters/Pagination';
 import ProductDetails from './ProductDetails';
 import { useProducts } from '@/hooks/useProducts';
-import { getBrandName, getCategoryName, getSubcategoryName, searchApi } from '@/services';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import {
+  catalogApi,
+  getBrandName,
+  getCategoryName,
+  getSubcategoryName,
+  searchApi,
+} from '@/services';
 import { DEFAULT_FILTERS, slugify, normalizeSpecificationKey } from '@/utils';
 
-const PRODUCTS_PER_PAGE = 12;
+// ─── Constants ──────────────────────────────────────────────────────────────
+
 const DETAIL_ALIAS_PATTERN = /^\d+$/;
 
 const FILTER_SECTIONS = [
@@ -23,22 +48,22 @@ const FILTER_SECTIONS = [
   { key: 'operatingSystem', label: 'Operating System', optionKey: 'operatingSystemValue', emptyLabel: 'No operating systems available.' },
 ];
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 const toDisplayValue = (value: any) => String(value || '').trim();
 
 const getSpecificationValue = (product: any, keys: string[] = []) => {
   const specifications = product?.specifications || [];
   const normalizedKeys = keys.map((key) => normalizeSpecificationKey(key));
-
   if (Array.isArray(specifications)) {
     for (const section of specifications) {
-      for (const item of (section.items || [])) {
+      for (const item of section.items || []) {
         if (normalizedKeys.includes(normalizeSpecificationKey(item.key))) {
           return String(item.value).trim();
         }
       }
     }
   }
-
   return '';
 };
 
@@ -47,7 +72,6 @@ const matchesSelectedValues = (selectedValues: any[] = [], entryValue: string = 
 
 const normalizeFacetOptions = (source: any) => {
   if (!source) return [];
-
   if (Array.isArray(source)) {
     return source.map((item: any) => {
       if (typeof item === 'string' || typeof item === 'number') {
@@ -58,7 +82,6 @@ const normalizeFacetOptions = (source: any) => {
       return value ? { value: String(value), label: String(label), count: Number(item.count ?? item.doc_count ?? 0) } : null;
     }).filter(Boolean);
   }
-
   if (typeof source === 'object') {
     return Object.entries(source).map(([value, count]: [string, any]) => ({
       value: String(value),
@@ -66,7 +89,6 @@ const normalizeFacetOptions = (source: any) => {
       count: Number(count?.count ?? count?.doc_count ?? count ?? 0),
     }));
   }
-
   return [];
 };
 
@@ -75,10 +97,18 @@ const getFacetSource = (facets: any = {}, section: any) => {
   return source?.[section.key] ?? source?.[section.optionKey] ?? source?.[section.label] ?? source?.[section.label?.toLowerCase?.()] ?? null;
 };
 
+// ─── ProductsPage ────────────────────────────────────────────────────────────
+
 function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
   const { category: urlCategory, subcategory: urlSubcategory } = useParams();
   const navigate = useNavigate();
-  const { products = [], categories = [], subcategories = [], subcategoriesByCategory = {}, brands = [], loading = false, error = null } = useProducts() ?? {};
+  const {
+    categories = [],
+    subcategories = [],
+    subcategoriesByCategory = {},
+    brands = [],
+    error = null,
+  } = useProducts() ?? {};
   const [searchParams, setSearchParams] = useSearchParams();
 
   const querySearch = searchParams.get('search') || '';
@@ -87,56 +117,54 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
   const requestedCategory = predefinedCategory || urlCategory || searchCategory || '';
   const requestedSubcategory = urlSubcategory || searchSubcategory || '';
 
-  const findCategory = useCallback((value) => {
-    if (!value || value === 'All') {
-      return null;
-    }
+  // ── Category / subcategory resolution ──────────────────────────────────────
 
-    return (
-      categories.find((category) => {
-        const categoryName = category?.name || '';
-        return (
-          String(category?.id) === String(value) ||
-          categoryName.toLowerCase() === String(value).toLowerCase() ||
-          slugify(categoryName) === slugify(value)
-        );
-      }) || null
-    );
+  const findCategory = useCallback((value: any) => {
+    if (!value || value === 'All') return null;
+    return categories.find((c: any) => {
+      const name = c?.name || '';
+      return (
+        String(c?.id) === String(value) ||
+        name.toLowerCase() === String(value).toLowerCase() ||
+        slugify(name) === slugify(value)
+      );
+    }) || null;
   }, [categories]);
 
-  const findSubcategory = useCallback((value, source = subcategories) => {
-    if (!value || value === 'All') {
-      return null;
-    }
-
-    return (
-      source.find((subcategory) => {
-        const subcategoryName = subcategory?.name || '';
-        return (
-          String(subcategory?.id) === String(value) ||
-          subcategoryName.toLowerCase() === String(value).toLowerCase() ||
-          slugify(subcategoryName) === slugify(value)
-        );
-      }) || null
-    );
+  const findSubcategory = useCallback((value: any, source = subcategories) => {
+    if (!value || value === 'All') return null;
+    return source.find((s: any) => {
+      const name = s?.name || '';
+      return (
+        String(s?.id) === String(value) ||
+        name.toLowerCase() === String(value).toLowerCase() ||
+        slugify(name) === slugify(value)
+      );
+    }) || null;
   }, [subcategories]);
 
-  const resolvedCategory = useMemo(() => findCategory(requestedCategory), [requestedCategory, findCategory]);
+  const resolvedCategory = useMemo(
+    () => findCategory(requestedCategory),
+    [requestedCategory, findCategory],
+  );
 
   const categoryScopedSubcategories = useMemo(
-    () => (resolvedCategory ? subcategoriesByCategory[String(resolvedCategory.id)] || [] : subcategories),
+    () => resolvedCategory ? subcategoriesByCategory[String(resolvedCategory.id)] || [] : subcategories,
     [resolvedCategory, subcategoriesByCategory, subcategories],
   );
 
   const resolvedSubcategory = useMemo(
-    () => findSubcategory(requestedSubcategory, categoryScopedSubcategories) || findSubcategory(requestedSubcategory, subcategories),
+    () =>
+      findSubcategory(requestedSubcategory, categoryScopedSubcategories) ||
+      findSubcategory(requestedSubcategory, subcategories),
     [requestedSubcategory, categoryScopedSubcategories, subcategories, findSubcategory],
   );
 
   const routeCategoryId = resolvedCategory?.id ? String(resolvedCategory.id) : null;
   const routeSubcategoryId = resolvedSubcategory?.id ? String(resolvedSubcategory.id) : null;
-
   const searchBrand = searchParams.get('brand');
+
+  // ── Filters / UI state ────────────────────────────────────────────────────
 
   const [filters, setFilters] = useState<Record<string, any>>({
     ...DEFAULT_FILTERS,
@@ -149,15 +177,27 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
   const [viewMode, setViewMode] = useState('grid');
   const [searchTerm, setSearchTerm] = useState(querySearch);
   const debouncedSearch = useDeferredValue(searchTerm);
-  const [currentPage, setCurrentPage] = useState(1);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  // ── Product data state ────────────────────────────────────────────────────
+
+  const [products, setProducts] = useState<any[]>([]);
+  const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // ── Server search state ───────────────────────────────────────────────────
+
   const [serverSearchProducts, setServerSearchProducts] = useState<any>(null);
   const [serverFacets, setServerFacets] = useState<Record<string, any>>({});
   const [serverSearchLoading, setServerSearchLoading] = useState(false);
 
+  // ── Sync filters from URL ─────────────────────────────────────────────────
+
   useEffect(() => {
-    setFilters((current) => ({
-      ...current,
+    setFilters((prev) => ({
+      ...prev,
       categories: routeCategoryId ? [routeCategoryId] : [],
       subcategories: routeSubcategoryId ? [routeSubcategoryId] : [],
       brands: searchBrand ? [searchBrand] : [],
@@ -168,13 +208,69 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
     setSearchTerm(querySearch);
   }, [querySearch]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters, debouncedSearch, sortBy]);
+  // ── Build backend params from current filters ─────────────────────────────
+  // Passes resolved IDs to the backend so the server pre-filters,
+  // meaning all 20 products in the response are relevant.
+
+  const backendParams = useMemo(() => {
+    const params: Record<string, any> = {};
+    const catId = filters.categories[0] || routeCategoryId;
+    const subId = filters.subcategories[0] || routeSubcategoryId;
+    const bId = filters.brands[0] || searchBrand;
+    if (catId) params.category = catId;
+    if (subId) params.subcategory = subId;
+    if (bId) params.brand = bId;
+    if (filters.featuredOnly) params.featured = 'true';
+    return params;
+  }, [
+    filters.categories, filters.subcategories, filters.brands,
+    filters.featuredOnly, routeCategoryId, routeSubcategoryId, searchBrand,
+  ]);
+
+  // ── Fetch first page whenever filters or backend params change ────────────
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentPage]);
+    if (debouncedSearch.trim().length >= 2) return; // server search handles this path
+    let isMounted = true;
+    setLoading(true);
+    setProducts([]);
+    setNextPageUrl(null);
+
+    catalogApi
+      .getProducts({ ...backendParams }, { categories, subcategories, brands })
+      .then((data: any) => {
+        if (!isMounted) return;
+        setProducts(data.results || []);
+        setNextPageUrl(data.next || null);
+        setTotalCount(data.count || 0);
+      })
+      .catch(() => { })
+      .finally(() => { if (isMounted) setLoading(false); });
+
+    return () => { isMounted = false; };
+    // Re-fetch when backend filters or catalog metadata changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [backendParams, categories.length, subcategories.length, brands.length]);
+
+  // ── Load more (infinite scroll) ───────────────────────────────────────────
+
+  const loadMore = useCallback(() => {
+    if (!nextPageUrl || loadingMore) return;
+    setLoadingMore(true);
+    catalogApi
+      .getProductsPage(nextPageUrl, { categories, subcategories, brands })
+      .then((data: any) => {
+        setProducts((prev) => [...prev, ...(data.results || [])]);
+        setNextPageUrl(data.next || null);
+      })
+      .catch(() => { })
+      .finally(() => setLoadingMore(false));
+  }, [nextPageUrl, loadingMore, categories, subcategories, brands]);
+
+  // Sentinel ref — when it enters the viewport, loadMore fires
+  const sentinelRef = useInfiniteScroll(loadMore, !!nextPageUrl && !loading && !loadingMore);
+
+  // ── Server search ─────────────────────────────────────────────────────────
 
   useEffect(() => {
     let isMounted = true;
@@ -184,13 +280,10 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
       setServerSearchProducts(null);
       setServerFacets({});
       setServerSearchLoading(false);
-      return () => {
-        isMounted = false;
-      };
+      return () => { isMounted = false; };
     }
 
     setServerSearchLoading(true);
-
     Promise.all([
       searchApi.searchProducts({ q: query, search: query }, { categories, subcategories, brands }),
       searchApi.getSearchFacets({ q: query, search: query }),
@@ -205,20 +298,15 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
         setServerSearchProducts(null);
         setServerFacets({});
       })
-      .finally(() => {
-        if (isMounted) {
-          setServerSearchLoading(false);
-        }
-      });
+      .finally(() => { if (isMounted) setServerSearchLoading(false); });
 
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [brands, categories, debouncedSearch, subcategories]);
+
+  // ── Catalog entries (client-side enrichment) ──────────────────────────────
 
   const activeProducts = Array.isArray(serverSearchProducts) ? serverSearchProducts : products;
 
-  // Fast lookup: categoryId (string) → category object — used inside catalogEntries map
   const categoryById = useMemo(
     () => new Map(categories.map((c: any) => [String(c.id), c])),
     [categories],
@@ -227,49 +315,34 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
   const catalogEntries = useMemo(
     () =>
       activeProducts.map((product: any) => {
-        // --- Resolve raw IDs from the product ---
         const rawCatId = String(
           product.categoryId ??
           product.category?.id ??
           (typeof product.category !== 'object' ? product.category : null) ??
-          ''
+          '',
         );
         const rawSubObj = product.subcategoryData ?? product.subcategory;
         const rawSubId = String(
           product.subcategoryId ??
           rawSubObj?.id ??
           (typeof rawSubObj !== 'object' ? rawSubObj : null) ??
-          ''
+          '',
         );
 
-        // --- Parent/child resolution ----------------------------------------
-        // The backend returns ALL categories (parents + children) in one flat
-        // list. A product's `category` field may point to a child category
-        // (one that has `parent` set), NOT the top-level parent. If we leave
-        // categoryId as the child ID, the category filter (which is seeded with
-        // the parent's ID from the URL) will never match.
-        //
-        // Fix: when the product's category is a child, promote the parent to
-        // categoryId and use the child as subcategoryId.
         const catObj = categoryById.get(rawCatId);
         const categoryId = catObj?.parent ? String(catObj.parent) : rawCatId;
         const subcategoryId = catObj?.parent ? rawCatId : rawSubId;
 
-        // --- Labels ---
         const categoryLabel = getCategoryName(categoryId, categories) || 'Uncategorized';
         const subcategoryLabel =
           (catObj?.parent ? catObj.name : null) ||
           getSubcategoryName(subcategoryId, subcategories) ||
           '';
-        const displayValue =
-          getSpecificationValue(product, ['display_size', 'display', 'screen_size']) || '';
-        const modelNameValue =
-          getSpecificationValue(product, ['model_name', 'model_number']) || '';
-        const colourValue =
-          getSpecificationValue(product, ['colour', 'color']) || '';
-        const operatingSystemValue =
-          getSpecificationValue(product, ['operating_system', 'os']) || '';
 
+        const displayValue = getSpecificationValue(product, ['display_size', 'display', 'screen_size']) || '';
+        const modelNameValue = getSpecificationValue(product, ['model_name', 'model_number']) || '';
+        const colourValue = getSpecificationValue(product, ['colour', 'color']) || '';
+        const operatingSystemValue = getSpecificationValue(product, ['operating_system', 'os']) || '';
         const brandValue = toDisplayValue(product.brandName || getBrandName(product.brand, brands));
         const name = toDisplayValue(product.name);
         const mpn = toDisplayValue(product.mpn) || 'N/A';
@@ -287,161 +360,95 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
           id: String(product.id),
           product,
           detailPath: `/products/${product.id}`,
-          name,
-          mpn,
-          sku,
-          categoryId,
-          categoryLabel,
-          subcategoryId,
-          subcategoryLabel,
-          displayValue,
-          modelNameValue,
-          brandValue,
-          colourValue,
-          operatingSystemValue,
+          name, mpn, sku,
+          categoryId, categoryLabel,
+          subcategoryId, subcategoryLabel,
+          displayValue, modelNameValue,
+          brandValue, colourValue, operatingSystemValue,
           searchText: `${name} ${mpn} ${sku} ${specificationsText}`.toLowerCase(),
         } as Record<string, any>;
       }),
     [activeProducts, categories, subcategories, brands, categoryById],
   );
 
-  const selectedCategoryIds = filters.categories;
+  // ── Filter helpers ────────────────────────────────────────────────────────
+
   const categoryNameById = useMemo(
-    () => new Map(categories.map((category) => [String(category.id), category.name])),
+    () => new Map(categories.map((c: any) => [String(c.id), c.name])),
     [categories],
   );
   const subcategoryNameById = useMemo(
-    () => new Map(subcategories.map((subcategory) => [String(subcategory.id), subcategory.name])),
+    () => new Map(subcategories.map((s: any) => [String(s.id), s.name])),
     [subcategories],
   );
 
-  const availableSubcategories = useMemo(() => {
-    if (!selectedCategoryIds.length) {
-      return subcategories;
-    }
+  const selectedCategoryIds = filters.categories;
 
+  const availableSubcategories = useMemo(() => {
+    if (!selectedCategoryIds.length) return subcategories;
     const lookup = new Map();
-    selectedCategoryIds.forEach((categoryId: any) => {
-      (subcategoriesByCategory[String(categoryId)] || []).forEach((subcategory) => {
-        lookup.set(String(subcategory.id), subcategory);
+    selectedCategoryIds.forEach((catId: any) => {
+      (subcategoriesByCategory[String(catId)] || []).forEach((s: any) => {
+        lookup.set(String(s.id), s);
       });
     });
-
     return Array.from(lookup.values());
   }, [selectedCategoryIds, subcategories, subcategoriesByCategory]);
 
   useEffect(() => {
-    if (!filters.subcategories.length) {
-      return;
-    }
-
-    const availableIds = new Set(availableSubcategories.map((subcategory) => String(subcategory.id)));
-    const nextSubcategories = filters.subcategories.filter((subcategoryId: any) => availableIds.has(String(subcategoryId)));
-
-    if (nextSubcategories.length !== filters.subcategories.length) {
-      setFilters((current) => ({
-        ...current,
-        subcategories: nextSubcategories,
-      }));
+    if (!filters.subcategories.length) return;
+    const availableIds = new Set(availableSubcategories.map((s: any) => String(s.id)));
+    const next = filters.subcategories.filter((id: any) => availableIds.has(String(id)));
+    if (next.length !== filters.subcategories.length) {
+      setFilters((prev) => ({ ...prev, subcategories: next }));
     }
   }, [availableSubcategories, filters.subcategories]);
 
   const matchesEntry = (entry: any, activeFilters: any, searchValue: string, ignoreKey: string | null = null) => {
-    const normalizedSearch = searchValue.trim().toLowerCase();
-
-    if (normalizedSearch && !entry.searchText.includes(normalizedSearch)) {
-      return false;
-    }
-
-    if (ignoreKey !== 'categories' && !matchesSelectedValues(activeFilters.categories, entry.categoryId)) {
-      return false;
-    }
-
-    if (ignoreKey !== 'subcategories' && !matchesSelectedValues(activeFilters.subcategories, entry.subcategoryId)) {
-      return false;
-    }
-
-    if (ignoreKey !== 'display' && !matchesSelectedValues(activeFilters.display, entry.displayValue)) {
-      return false;
-    }
-
-    if (ignoreKey !== 'modelName' && !matchesSelectedValues(activeFilters.modelName, entry.modelNameValue)) {
-      return false;
-    }
-
-    if (ignoreKey !== 'brands' && !matchesSelectedValues(activeFilters.brands, entry.brandValue)) {
-      return false;
-    }
-
-    if (ignoreKey !== 'colour' && !matchesSelectedValues(activeFilters.colour, entry.colourValue)) {
-      return false;
-    }
-
-    if (ignoreKey !== 'operatingSystem' && !matchesSelectedValues(activeFilters.operatingSystem, entry.operatingSystemValue)) {
-      return false;
-    }
-
-    if (ignoreKey !== 'featuredOnly' && activeFilters.featuredOnly && !entry.product.featured) {
-      return false;
-    }
-
+    const normalized = searchValue.trim().toLowerCase();
+    if (normalized && !entry.searchText.includes(normalized)) return false;
+    if (ignoreKey !== 'categories' && !matchesSelectedValues(activeFilters.categories, entry.categoryId)) return false;
+    if (ignoreKey !== 'subcategories' && !matchesSelectedValues(activeFilters.subcategories, entry.subcategoryId)) return false;
+    if (ignoreKey !== 'display' && !matchesSelectedValues(activeFilters.display, entry.displayValue)) return false;
+    if (ignoreKey !== 'modelName' && !matchesSelectedValues(activeFilters.modelName, entry.modelNameValue)) return false;
+    if (ignoreKey !== 'brands' && !matchesSelectedValues(activeFilters.brands, entry.brandValue)) return false;
+    if (ignoreKey !== 'colour' && !matchesSelectedValues(activeFilters.colour, entry.colourValue)) return false;
+    if (ignoreKey !== 'operatingSystem' && !matchesSelectedValues(activeFilters.operatingSystem, entry.operatingSystemValue)) return false;
+    if (ignoreKey !== 'featuredOnly' && activeFilters.featuredOnly && !entry.product.featured) return false;
     return true;
   };
 
   const filterSections = useMemo(
     () =>
       FILTER_SECTIONS.map((section) => {
-        const scopedEntries = catalogEntries.filter((entry) => matchesEntry(entry, filters, debouncedSearch, section.key));
-        const counts = new Map();
+        const scopedEntries = catalogEntries.filter((entry) =>
+          matchesEntry(entry, filters, debouncedSearch, section.key),
+        );
+        const counts = new Map<string, any>();
 
         scopedEntries.forEach((entry) => {
           const optionValue = section.idKey ? entry[section.idKey] : entry[section.optionKey];
           const optionLabel = entry[section.optionKey];
-
-          if (!optionValue || !optionLabel) {
-            return;
-          }
-
-          const current = counts.get(String(optionValue)) || {
-            value: String(optionValue),
-            label: optionLabel,
-            count: 0,
-          };
-
-          counts.set(String(optionValue), {
-            ...current,
-            count: current.count + 1,
-          });
+          if (!optionValue || !optionLabel) return;
+          const current = counts.get(String(optionValue)) || { value: String(optionValue), label: optionLabel, count: 0 };
+          counts.set(String(optionValue), { ...current, count: current.count + 1 });
         });
 
         const selectedValues = filters[section.key] || [];
-        selectedValues.forEach((selectedValue: any) => {
-          const valueKey = String(selectedValue);
-
-          if (counts.has(valueKey)) {
-            return;
-          }
-
-          let label = valueKey;
-
-          if (section.key === 'categories') {
-            label = categoryNameById.get(valueKey) || valueKey;
-          } else if (section.key === 'subcategories') {
-            label = subcategoryNameById.get(valueKey) || valueKey;
-          } else {
-            const matchingEntry = catalogEntries.find((entry) => {
-              const optionValue = section.idKey ? entry[section.idKey] : entry[section.optionKey];
-              return String(optionValue) === valueKey;
+        selectedValues.forEach((sel: any) => {
+          const key = String(sel);
+          if (counts.has(key)) return;
+          let label = key;
+          if (section.key === 'categories') label = categoryNameById.get(key) || key;
+          else if (section.key === 'subcategories') label = subcategoryNameById.get(key) || key;
+          else {
+            const match = catalogEntries.find((e) => {
+              const v = section.idKey ? e[section.idKey] : e[section.optionKey];
+              return String(v) === key;
             });
-
-            label = matchingEntry?.[section.optionKey] || valueKey;
+            label = match?.[section.optionKey] || key;
           }
-
-          counts.set(valueKey, {
-            value: valueKey,
-            label,
-            count: 0,
-          });
+          counts.set(key, { value: key, label, count: 0 });
         });
 
         normalizeFacetOptions(getFacetSource(serverFacets, section)).forEach((facetOption: any) => {
@@ -452,141 +459,84 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
 
         return {
           ...section,
-          options: Array.from(counts.values()).sort((first, second) => first.label.localeCompare(second.label)),
+          options: Array.from(counts.values()).sort((a, b) => a.label.localeCompare(b.label)),
         };
       }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [catalogEntries, filters, debouncedSearch, categoryNameById, subcategoryNameById, serverFacets],
   );
 
   const filteredEntries = useMemo(() => {
-    const visibleEntries = catalogEntries.filter((entry) => matchesEntry(entry, filters, debouncedSearch));
-
-    return [...visibleEntries].sort((first, second) => {
-      if (sortBy === 'name-asc') {
-        return first.name.localeCompare(second.name);
-      }
-
-      if (sortBy === 'name-desc') {
-        return second.name.localeCompare(first.name);
-      }
-
+    const visible = catalogEntries.filter((e) => matchesEntry(e, filters, debouncedSearch));
+    return [...visible].sort((a, b) => {
+      if (sortBy === 'name-asc') return a.name.localeCompare(b.name);
+      if (sortBy === 'name-desc') return b.name.localeCompare(a.name);
       return 0;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [catalogEntries, filters, debouncedSearch, sortBy]);
 
-  const totalPages = Math.ceil(filteredEntries.length / PRODUCTS_PER_PAGE);
-  const paginatedProducts = filteredEntries
-    .slice((currentPage - 1) * PRODUCTS_PER_PAGE, currentPage * PRODUCTS_PER_PAGE)
-    .map((entry) => entry.product);
+  // ── Filter chip helpers ───────────────────────────────────────────────────
 
   const selectedCategoryLabels = useMemo(() => {
-    const map = new Map(categories.map((category) => [String(category.id), category.name]));
-    return filters.categories.map((categoryId: any) => ({
-      key: 'categories',
-      value: categoryId,
-      label: map.get(String(categoryId)) || String(categoryId),
-      groupLabel: 'Category',
+    const map = new Map(categories.map((c: any) => [String(c.id), c.name]));
+    return filters.categories.map((id: any) => ({
+      key: 'categories', value: id,
+      label: map.get(String(id)) || String(id), groupLabel: 'Category',
     }));
   }, [filters.categories, categories]);
 
   const selectedSubcategoryLabels = useMemo(() => {
-    const map = new Map(subcategories.map((subcategory) => [String(subcategory.id), subcategory.name]));
-    return filters.subcategories.map((subcategoryId: any) => ({
-      key: 'subcategories',
-      value: subcategoryId,
-      label: map.get(String(subcategoryId)) || String(subcategoryId),
-      groupLabel: 'Subcategory',
+    const map = new Map(subcategories.map((s: any) => [String(s.id), s.name]));
+    return filters.subcategories.map((id: any) => ({
+      key: 'subcategories', value: id,
+      label: map.get(String(id)) || String(id), groupLabel: 'Subcategory',
     }));
   }, [filters.subcategories, subcategories]);
 
   const activeFilterChips = useMemo(() => {
     const chips = [...selectedCategoryLabels, ...selectedSubcategoryLabels];
-
     filterSections.forEach((section) => {
-      if (section.key === 'categories' || section.key === 'subcategories') {
-        return;
-      }
-
-      const selectedValues = filters[section.key] || [];
-      selectedValues.forEach((selectedValue: any) => {
-        const matchingOption = section.options.find((option) => String(option.value) === String(selectedValue));
-
-        chips.push({
-          key: section.key,
-          value: selectedValue,
-          label: matchingOption?.label || String(selectedValue),
-          groupLabel: section.label,
-        });
+      if (section.key === 'categories' || section.key === 'subcategories') return;
+      (filters[section.key] || []).forEach((val: any) => {
+        const opt = section.options.find((o: any) => String(o.value) === String(val));
+        chips.push({ key: section.key, value: val, label: opt?.label || String(val), groupLabel: section.label });
       });
     });
-
-    if (filters.featuredOnly) {
-      chips.push({
-        key: 'featuredOnly',
-        value: 'featuredOnly',
-        label: 'Stocked Units',
-        groupLabel: 'Availability',
-      });
-    }
-
+    if (filters.featuredOnly) chips.push({ key: 'featuredOnly', value: 'featuredOnly', label: 'Stocked Units', groupLabel: 'Availability' });
     return chips;
   }, [filters, filterSections, selectedCategoryLabels, selectedSubcategoryLabels]);
 
   const handleToggleFilter = (key: any, value: any) => {
-    setFilters((current: any) => {
-      if (key === 'featuredOnly') {
-        return {
-          ...current,
-          featuredOnly: !current.featuredOnly,
-        };
-      }
-
-      const currentValues = Array.isArray(current[key]) ? current[key] : [];
-      const nextValues = currentValues.includes(value)
-        ? currentValues.filter((item) => item !== value)
-        : [...currentValues, value];
-
+    setFilters((prev: any) => {
+      if (key === 'featuredOnly') return { ...prev, featuredOnly: !prev.featuredOnly };
+      const current = Array.isArray(prev[key]) ? prev[key] : [];
+      const next = current.includes(value) ? current.filter((v: any) => v !== value) : [...current, value];
       if (key === 'categories') {
-        if (!nextValues.length) {
-          return {
-            ...current,
-            categories: [],
-            subcategories: [],
-          };
-        }
-
-        const validSubcategoryIds = new Set(
-          nextValues.flatMap((categoryId) =>
-            (subcategoriesByCategory[String(categoryId)] || []).map((subcategory) => String(subcategory.id)),
+        if (!next.length) return { ...prev, categories: [], subcategories: [] };
+        const validSubIds = new Set(
+          next.flatMap((catId: any) =>
+            (subcategoriesByCategory[String(catId)] || []).map((s: any) => String(s.id)),
           ),
         );
-
         return {
-          ...current,
-          categories: nextValues,
-          subcategories: current.subcategories.filter((subcategoryId: any) => validSubcategoryIds.has(String(subcategoryId))),
+          ...prev,
+          categories: next,
+          subcategories: prev.subcategories.filter((id: any) => validSubIds.has(String(id))),
         };
       }
-
-      return {
-        ...current,
-        [key]: nextValues,
-      };
+      return { ...prev, [key]: next };
     });
   };
 
   const handleRemoveFilter = (key: any, value: any) => {
     if (key === 'featuredOnly') {
-      setFilters((current: any) => ({
-        ...current,
-        featuredOnly: false,
-      }));
+      setFilters((prev: any) => ({ ...prev, featuredOnly: false }));
       return;
     }
-
-    setFilters((current: any) => ({
-      ...current,
-      [key]: (current[key] || []).filter((item: any) => String(item) !== String(value)),
+    setFilters((prev: any) => ({
+      ...prev,
+      [key]: (prev[key] || []).filter((v: any) => String(v) !== String(value)),
     }));
   };
 
@@ -594,21 +544,21 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
     setFilters(DEFAULT_FILTERS);
     setSearchTerm('');
     setSearchParams({});
-
-    if (urlCategory || urlSubcategory || predefinedCategory) {
-      navigate('/products');
-    }
+    if (urlCategory || urlSubcategory || predefinedCategory) navigate('/products');
   };
+
+  // ── Labels for breadcrumbs ────────────────────────────────────────────────
 
   const activeCategoryLabel =
     filters.categories.length === 1
-      ? categories.find((category) => String(category.id) === String(filters.categories[0]))?.name || ''
+      ? categories.find((c: any) => String(c.id) === String(filters.categories[0]))?.name || ''
       : '';
 
   const activeSubcategoryLabel =
     filters.subcategories.length === 1
-      ? subcategories.find((subcategory) => String(subcategory.id) === String(filters.subcategories[0]))?.name || ''
+      ? subcategories.find((s: any) => String(s.id) === String(filters.subcategories[0]))?.name || ''
       : '';
+
   const hasCategoryScopedResults = Boolean(filters.categories.length || filters.subcategories.length);
 
   const breadcrumbItems = [
@@ -617,13 +567,21 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
     ...(activeSubcategoryLabel ? [{ label: activeSubcategoryLabel, active: true }] : []),
   ];
 
+  // ── Progress indicator ────────────────────────────────────────────────────
+
+  const loadedCount = products.length;
+  const hasMore = !!nextPageUrl;
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
     <div className="min-h-screen bg-slate-50/30">
       <Breadcrumbs items={breadcrumbItems} />
 
       <div className="container-shell pb-8 pt-8 sm:pb-16 lg:pb-20">
-
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+
+          {/* Mobile filter overlay */}
           {showMobileFilters ? (
             <button
               type="button"
@@ -633,6 +591,7 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
             />
           ) : null}
 
+          {/* Filter sidebar */}
           <div
             className={`fixed inset-y-0 left-0 z-[40] w-[min(88vw,340px)] bg-white transition-transform duration-300 lg:sticky lg:top-6 lg:z-auto lg:w-[280px] lg:self-start lg:bg-transparent xl:w-[300px] ${showMobileFilters ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
               }`}
@@ -661,14 +620,18 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
             </div>
           </div>
 
+          {/* Main content */}
           <div className="min-w-0 flex-1">
+
+            {/* Header row */}
             <div className="mb-6 border-b border-slate-200 pb-6 sm:mb-8 sm:pb-8">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold text-slate-400">{filteredEntries.length} result{filteredEntries.length !== 1 ? 's' : ''}
-                    {filteredEntries.length !== products.length
-                      ? ` (filtered from ${products.length} total)`
-                      : ''}
+                  {/* Product count — shows loaded vs total */}
+                  <p className="text-[11px] font-semibold text-slate-400">
+                    {filteredEntries.length > 0
+                      ? `${filteredEntries.length} result${filteredEntries.length !== 1 ? 's' : ''}${totalCount > loadedCount ? ` — scroll for more` : ` of ${totalCount} total`}`
+                      : totalCount > 0 ? `${totalCount} product${totalCount !== 1 ? 's' : ''} available` : ''}
                   </p>
                   <h1 className="mt-1.5 text-2xl font-black tracking-tight text-textMain sm:mt-2 sm:text-3xl md:text-4xl">
                     {activeSubcategoryLabel || activeCategoryLabel || 'Global Catalog'}
@@ -677,6 +640,7 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
 
                 <div className="flex flex-col gap-4 lg:shrink-0 lg:items-end">
                   <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
+
                     {/* Search */}
                     <div className="relative w-full sm:max-w-[320px] sm:flex-1 lg:w-[280px] lg:flex-none xl:w-[320px]">
                       <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -684,8 +648,8 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
                         type="text"
                         placeholder="Search by name, SKU, or specs…"
                         value={searchTerm}
-                        onChange={(event) => {
-                          const val = event.target.value;
+                        onChange={(e) => {
+                          const val = e.target.value;
                           startTransition(() => setSearchTerm(val));
                           setSearchParams((prev) => {
                             const next = new URLSearchParams(prev);
@@ -713,7 +677,7 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sort</span>
                       <select
                         value={sortBy}
-                        onChange={(event) => setSortBy(event.target.value)}
+                        onChange={(e) => setSortBy(e.target.value)}
                         className="bg-transparent py-2 text-[11px] font-black uppercase tracking-[0.12em] text-textMain outline-none"
                       >
                         <option value="relevance">Relevance</option>
@@ -759,7 +723,7 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
                         </button>
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {activeFilterChips.map((chip) => (
+                        {activeFilterChips.map((chip: any) => (
                           <button
                             key={`${chip.key}-${chip.value}`}
                             type="button"
@@ -777,12 +741,14 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
               </div>
             </div>
 
+            {/* Product grid */}
             <div className="min-h-[420px]">
               {loading || serverSearchLoading ? (
+                // Initial load spinner
                 <div className="flex flex-col items-center justify-center gap-4 py-24">
                   <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-primary" />
                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-                    {serverSearchLoading ? 'Searching Catalog…' : 'Refreshing Catalog…'}
+                    {serverSearchLoading ? 'Searching Catalog…' : 'Loading Products…'}
                   </span>
                 </div>
               ) : error ? (
@@ -792,32 +758,50 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
                 </div>
               ) : filteredEntries.length ? (
                 <div className="space-y-8 sm:space-y-10">
-                  <ProductGrid products={paginatedProducts} viewMode={viewMode as any} />
-                  {totalPages > 1 ? (
-                    <div className="border-t border-slate-200 pt-8 sm:pt-10">
-                      <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                      />
+                  <ProductGrid products={filteredEntries.map((e: any) => e.product)} viewMode={viewMode as any} />
+
+                  {/* ── Infinite scroll sentinel ─────────────────────────────
+                      This invisible div sits below the product grid.
+                      When it enters the viewport, useInfiniteScroll fires loadMore.
+                      The 200px rootMargin means loading starts before the user
+                      actually hits the bottom — seamless experience.
+                  ────────────────────────────────────────────────────────── */}
+                  <div ref={sentinelRef} className="h-1" />
+
+                  {/* Loading more spinner */}
+                  {loadingMore && (
+                    <div className="flex justify-center py-8">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-200 border-t-primary" />
                     </div>
-                  ) : null}
+                  )}
+
+                  {/* End of results message */}
+                  {!hasMore && !loadingMore && totalCount > 0 && (
+                    <p className="border-t border-slate-200 pt-8 text-center text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+                      All {totalCount} products loaded
+                    </p>
+                  )}
                 </div>
               ) : (
+                // Empty state
                 <div className="flex flex-col items-center rounded-3xl border-2 border-dashed border-slate-200 bg-white py-24 text-center">
                   <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
                     <Search size={22} className="text-slate-300" />
                   </div>
                   <p className="text-[17px] font-black tracking-tight text-slate-600">
-                    {products.length
-                      ? (hasCategoryScopedResults ? 'No products in this category' : 'No products found')
-                      : 'No products available'}
+                    {totalCount === 0 && !loading
+                      ? 'No products available'
+                      : hasCategoryScopedResults
+                        ? 'No products in this category'
+                        : 'No products found'}
                   </p>
-                  <p className="mt-2 text-[13px] text-slate-400">Try adjusting your filters or search terms.</p>
+                  <p className="mt-2 text-[13px] text-slate-400">
+                    Try adjusting your filters or search terms.
+                  </p>
                   <button
                     type="button"
                     onClick={resetFilters}
-                    className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-8 py-3 text-[11px] font-black uppercase tracking-widest text-textMain transition-all hover:opacity-90 hover:shadow-[0_4px_16px_rgba(251,198,29,0.3)]"
+                    className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-8 py-3 text-[11px] font-black uppercase tracking-widest text-textMain transition-all hover:opacity-90"
                   >
                     Clear All Filters
                   </button>
@@ -831,13 +815,13 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
   );
 }
 
+// ─── Route wrapper ────────────────────────────────────────────────────────────
+
 function Products(props: any) {
   const { category, subcategory } = useParams();
-
   if (!subcategory && DETAIL_ALIAS_PATTERN.test(category || '')) {
     return <ProductDetails productIdOverride={category} />;
   }
-
   return <ProductsPage {...props} />;
 }
 

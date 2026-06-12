@@ -40,7 +40,7 @@ const MarketplacePulseChart = ({ counts, inventory, customers, wishlists }: { co
     { label: 'Stock',      val: inventory.total_stock_items || 0, from: '#34d399', to: '#047857' },
     { label: 'Wishlists',  val: wishlists.total_wishlists || 0, from: '#fb7185', to: '#be123c' },
     { label: 'Customers',  val: customers.total_users   || 0, from: '#c084fc', to: '#6d28d9' },
-    { label: 'Requests',   val: counts.total_requests   || 0, from: '#fbc61d', to: '#b45309' },
+    { label: 'Requests',   val: counts.total_requests   || 0, from: '#3095F8', to: '#1e40af' },
   ];
   const svgW = 580, svgH = 210, padL = 40, padR = 12, padT = 28, padB = 34;
   const chartW = svgW - padL - padR, chartH = svgH - padT - padB;
@@ -271,7 +271,7 @@ function AdminDashboardPage() {
         </div>
         <div className="relative flex flex-col justify-between overflow-hidden rounded-[24px] border border-white/[0.06] p-5 text-white"
           style={{ background: 'linear-gradient(150deg,#0d1117 0%,#090e1a 100%)', boxShadow: '0 0 0 1px rgba(255,255,255,0.04),0 28px 60px rgba(0,0,0,0.4)', minHeight: 280 }}>
-          <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 55% at 50% -10%,rgba(251,198,29,0.1) 0%,transparent 70%)' }} />
+          <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 55% at 50% -10%,rgba(48,149,248,0.1) 0%,transparent 70%)' }} />
           <div className="pointer-events-none absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle,rgba(255,255,255,0.035) 1px,transparent 1px)', backgroundSize: '20px 20px' }} />
           <div className="relative">
             <Zap className="mb-3 text-primary" size={20} />

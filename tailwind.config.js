@@ -5,9 +5,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#fbc61d',
-        yellowPrimary: '#fbc61d',
-        yellowHover: '#fbc61d',
+        primary: '#3095F8',
+        yellowPrimary: '#3095F8',
+        yellowHover: '#3095F8',
         greyDark: '#74736f',      // Deep charcoal
         greyLight: '#F5F5F5',    // Silk grey background
         greyMedium: '#E0E0E0',   // Medium grey
@@ -17,7 +17,7 @@ export default {
         lumio: {
           '950': '#000000',
           '900': '#050505',
-          'accent': '#fbc61d',
+          'accent': '#3095F8',
         },
       },
       fontFamily: {

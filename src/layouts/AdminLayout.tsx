@@ -50,7 +50,7 @@ function AdminLayout() {
               className="pointer-events-none absolute inset-0 opacity-30"
               style={{
                 background:
-                  'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(251,198,29,0.15) 0%, transparent 70%)',
+                  'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(48,149,248,0.15) 0%, transparent 70%)',
               }}
             />
             <p className="relative text-[9px] font-black uppercase tracking-[0.42em] text-primary">
@@ -76,7 +76,7 @@ function AdminLayout() {
                   className={({ isActive }) =>
                     `group flex items-center gap-3 rounded-2xl px-4 py-3 text-[13px] font-semibold transition-all duration-200 ${
                       isActive
-                        ? 'bg-primary text-textMain shadow-[0_8px_20px_rgba(251,198,29,0.22)]'
+                        ? 'bg-primary text-textMain shadow-[0_8px_20px_rgba(48,149,248,0.22)]'
                         : 'text-white/55 hover:bg-white/[0.06] hover:text-white'
                     }`
                   }

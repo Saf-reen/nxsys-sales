@@ -60,7 +60,8 @@ export function ProductProvider({ children }) {
       try {
         const productRes = await getProducts({}, catalogSnapshotRef.current);
         if (!isMountedRef.current) return productRes;
-        setProducts(Array.isArray(productRes) ? productRes : []);
+        const productList = Array.isArray(productRes) ? productRes : (productRes?.results || []);
+        setProducts(productList);
         lastFetchedAtRef.current = Date.now();
         return productRes;
       } catch (err) {

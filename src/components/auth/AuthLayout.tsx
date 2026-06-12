@@ -35,13 +35,13 @@ const AuthLayout = ({ children, title, subtitle, badge, imageText, imageSubtitle
           }}
         />
         {/* Yellow glow */}
-        <div className="pointer-events-none absolute top-1/2 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[120px]" style={{ background: 'rgba(251,198,29,0.07)' }} />
+        <div className="pointer-events-none absolute top-1/2 left-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[120px]" style={{ background: 'rgba(48,149,248,0.07)' }} />
         {/* Right divider */}
         <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
 
         {/* Brand */}
         <div className="relative flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-[0_4px_16px_rgba(251,198,29,0.3)]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-[0_4px_16px_rgba(48,149,248,0.3)]">
             <ShoppingBag size={19} className="text-textMain" />
           </div>
           <span className="text-[14px] font-black uppercase tracking-[0.2em] text-white">SRIA Distribution</span>

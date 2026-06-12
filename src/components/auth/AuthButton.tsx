@@ -3,7 +3,7 @@ const AuthButton = ({ children, loading, className = '', ...props }) => {
     <button
       {...props}
       disabled={loading || props.disabled}
-      className={`flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-[12px] font-black uppercase tracking-[0.16em] text-textMain transition-all hover:opacity-90 hover:shadow-[0_8px_20px_rgba(251,198,29,0.3)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`flex w-full items-center justify-center gap-2 rounded-full bg-primary px-6 py-3.5 text-[12px] font-black uppercase tracking-[0.16em] text-textMain transition-all hover:opacity-90 hover:shadow-[0_8px_20px_rgba(48,149,248,0.3)] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
     >
       {loading && (
         <svg

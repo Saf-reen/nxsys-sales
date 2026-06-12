@@ -17,11 +17,11 @@ function Contact() {
         />
         <div
           className="pointer-events-none absolute -top-32 -right-32 h-[500px] w-[500px] rounded-full blur-3xl"
-          style={{ background: 'rgba(251,198,29,0.07)' }}
+          style={{ background: 'rgba(48,149,248,0.07)' }}
         />
         <div
           className="pointer-events-none absolute bottom-0 left-0 h-64 w-64 rounded-full blur-3xl"
-          style={{ background: 'rgba(251,198,29,0.04)' }}
+          style={{ background: 'rgba(48,149,248,0.04)' }}
         />
 
         <div className="container-shell relative py-20 sm:py-28 lg:py-32">
@@ -63,7 +63,7 @@ function Contact() {
           <div className="space-y-4">
             {/* Address */}
             <div className="group flex gap-5 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:gap-7 sm:p-8">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary shadow-[0_8px_24px_rgba(251,198,29,0.28)] transition-transform duration-300 group-hover:scale-105">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary shadow-[0_8px_24px_rgba(48,149,248,0.28)] transition-transform duration-300 group-hover:scale-105">
                 <MapPin size={22} className="text-textMain" />
               </div>
               <div className="min-w-0 space-y-1.5">
@@ -84,7 +84,7 @@ function Contact() {
 
             {/* Phone */}
             <div className="group flex gap-5 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:gap-7 sm:p-8">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary shadow-[0_8px_24px_rgba(251,198,29,0.28)] transition-transform duration-300 group-hover:scale-105">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary shadow-[0_8px_24px_rgba(48,149,248,0.28)] transition-transform duration-300 group-hover:scale-105">
                 <Phone size={22} className="text-textMain" />
               </div>
               <div className="min-w-0 space-y-1.5">
@@ -101,7 +101,7 @@ function Contact() {
 
             {/* Email */}
             <div className="group flex gap-5 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition-shadow hover:shadow-md sm:gap-7 sm:p-8">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary shadow-[0_8px_24px_rgba(251,198,29,0.28)] transition-transform duration-300 group-hover:scale-105">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary shadow-[0_8px_24px_rgba(48,149,248,0.28)] transition-transform duration-300 group-hover:scale-105">
                 <Mail size={22} className="text-textMain" />
               </div>
               <div className="min-w-0 space-y-1.5">
@@ -130,11 +130,11 @@ function Contact() {
               />
               <div
                 className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full blur-3xl"
-                style={{ background: 'rgba(251,198,29,0.1)' }}
+                style={{ background: 'rgba(48,149,248,0.1)' }}
               />
               <div className="relative space-y-5">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary shadow-[0_6px_18px_rgba(251,198,29,0.3)]">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary shadow-[0_6px_18px_rgba(48,149,248,0.3)]">
                     <Clock size={20} className="text-textMain" />
                   </div>
                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Business Hours</p>

@@ -121,11 +121,11 @@ function CategoryCarousel({
   /* ── Variant 3: Tinted — primary-washed background, icon accent ── */
   if (variant === 'tinted') {
     return (
-      <section className="py-12 sm:py-16" style={{ background: 'rgba(251,198,29,0.07)' }}>
+      <section className="py-12 sm:py-16" style={{ background: 'rgba(48,149,248,0.07)' }}>
         <div className="container-shell space-y-7">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-2xl font-black text-textMain shadow-[0_8px_24px_rgba(251,198,29,0.3)]">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary text-2xl font-black text-textMain shadow-[0_8px_24px_rgba(48,149,248,0.3)]">
                 {category[0].toUpperCase()}
               </div>
               <div>

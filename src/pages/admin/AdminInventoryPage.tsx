@@ -29,7 +29,8 @@ function AdminInventoryPage() {
         getCatalogData().catch(() => ({ categories: [], brands: [] })),
       ]);
 
-      const productList = await getProducts({}, catalogData).catch(() => []);
+      const productResponse = await getProducts({}, catalogData).catch(() => []);
+      const productList = Array.isArray(productResponse) ? productResponse : (productResponse?.results || []);
       const inventoryItems = Array.isArray(inventoryData) ? inventoryData : (inventoryData?.results || []);
 
       // Merge stock data with product details

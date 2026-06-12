@@ -72,11 +72,12 @@ function AdminProductsPage() {
         // Keep the product table available even if catalog metadata is temporarily unavailable.
       }
       
-      const productList = await getProducts({
+      const productResponse = await getProducts({}, {
         categories: catalogData.categories,
         subcategories: catalogData.subcategories,
         brands: catalogData.brands,
       });
+      const productList = Array.isArray(productResponse) ? productResponse : (productResponse?.results || []);
 
       setCategories(catalogData.categories);
       setSubcategories(catalogData.subcategories);

@@ -243,7 +243,7 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
         </p>
         <Link
           to="/products"
-          className="mt-8 inline-flex items-center gap-2.5 rounded-full bg-primary px-8 py-3.5 text-[11px] font-black uppercase tracking-widest text-textMain transition-all hover:opacity-90 hover:shadow-[0_8px_24px_rgba(251,198,29,0.3)]"
+          className="mt-8 inline-flex items-center gap-2.5 rounded-full bg-primary px-8 py-3.5 text-[11px] font-black uppercase tracking-widest text-textMain transition-all hover:opacity-90 hover:shadow-[0_8px_24px_rgba(48,149,248,0.3)]"
         >
           Browse Catalog <ArrowRight size={14} />
         </Link>

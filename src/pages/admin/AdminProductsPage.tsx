@@ -1,10 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { Check, Edit2, X, Eye, Trash2 } from 'lucide-react';
 import { getCategoryName, getApiErrorMessage, getNormalizedApiError, getBrandName, resolveAssetUrl, getEntityId } from '@/services';
-import { getCatalogData } from '@/services';
+import { getCatalogData, fetchAllPages, api, normalizeProduct } from '@/services';
 import {
   createProduct,
-  getProducts,
   updateProduct,
   patchProduct,
   bulkUploadProducts,
@@ -72,12 +71,14 @@ function AdminProductsPage() {
         // Keep the product table available even if catalog metadata is temporarily unavailable.
       }
       
-      const productResponse = await getProducts({}, {
-        categories: catalogData.categories,
-        subcategories: catalogData.subcategories,
-        brands: catalogData.brands,
-      });
-      const productList = Array.isArray(productResponse) ? productResponse : (productResponse?.results || []);
+      const rawList = await fetchAllPages(api, '/products/products/', { include_inactive: 'true', page_size: 100 });
+      const productList = rawList
+        .map((p: any) => normalizeProduct(p, {
+          categories: catalogData.categories,
+          subcategories: catalogData.subcategories,
+          brands: catalogData.brands,
+        }))
+        .filter(Boolean);
 
       setCategories(catalogData.categories);
       setSubcategories(catalogData.subcategories);

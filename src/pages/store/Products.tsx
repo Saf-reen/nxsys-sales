@@ -196,12 +196,12 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
   // ── Sync filters from URL ─────────────────────────────────────────────────
 
   useEffect(() => {
-    setFilters((prev) => ({
-      ...prev,
+    setFilters({
+      ...DEFAULT_FILTERS,
       categories: routeCategoryId ? [routeCategoryId] : [],
       subcategories: routeSubcategoryId ? [routeSubcategoryId] : [],
       brands: searchBrand ? [searchBrand] : [],
-    }));
+    });
   }, [routeCategoryId, routeSubcategoryId, searchBrand]);
 
   useEffect(() => {
@@ -214,18 +214,14 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
 
   const backendParams = useMemo(() => {
     const params: Record<string, any> = {};
-    const catId = filters.categories[0] || routeCategoryId;
-    const subId = filters.subcategories[0] || routeSubcategoryId;
-    const bId = filters.brands[0] || searchBrand;
-    if (catId) params.category = catId;
-    if (subId) params.subcategory = subId;
-    if (bId) params.brand = bId;
+    if (filters.categories.length) params.category = filters.categories[0];
+    // Only send subcategory/brand to backend for single-selection; multi-select is handled client-side
+    // so the backend returns the full category set and the client filters from it.
+    if (filters.subcategories.length === 1) params.subcategory = filters.subcategories[0];
+    if (filters.brands.length === 1) params.brand = filters.brands[0];
     if (filters.featuredOnly) params.featured = 'true';
     return params;
-  }, [
-    filters.categories, filters.subcategories, filters.brands,
-    filters.featuredOnly, routeCategoryId, routeSubcategoryId, searchBrand,
-  ]);
+  }, [filters.categories, filters.subcategories, filters.brands, filters.featuredOnly]);
 
   // ── Fetch first page whenever filters or backend params change ────────────
 
@@ -457,13 +453,27 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
           }
         });
 
+        let options = Array.from(counts.values()).sort((a, b) => a.label.localeCompare(b.label));
+
+        if (section.key === 'subcategories' && selectedCategoryIds.length > 0 && availableSubcategories.length > 0) {
+          const availableIds = new Set(availableSubcategories.map((s: any) => String(s.id)));
+          const keptOptions = options.filter((opt) => availableIds.has(String(opt.value)));
+          const keptIds = new Set(keptOptions.map((opt) => String(opt.value)));
+          availableSubcategories.forEach((s: any) => {
+            if (!keptIds.has(String(s.id))) {
+              keptOptions.push({ value: String(s.id), label: s.name, count: 0 });
+            }
+          });
+          options = keptOptions.sort((a, b) => a.label.localeCompare(b.label));
+        }
+
         return {
           ...section,
-          options: Array.from(counts.values()).sort((a, b) => a.label.localeCompare(b.label)),
+          options,
         };
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [catalogEntries, filters, debouncedSearch, categoryNameById, subcategoryNameById, serverFacets],
+    [catalogEntries, filters, debouncedSearch, categoryNameById, subcategoryNameById, serverFacets, availableSubcategories],
   );
 
   const filteredEntries = useMemo(() => {

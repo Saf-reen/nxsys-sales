@@ -587,7 +587,7 @@ export const authService = {
   verifyAdminAccess: async () => authSessionStorage.getUser(),
 };
 
-const fetchAllPages = async (client: AxiosInstance, url: string, params: any = {}) => {
+export const fetchAllPages = async (client: AxiosInstance, url: string, params: any = {}) => {
   const items: any[] = [];
   let nextUrl: string | null = url;
   while (nextUrl) {

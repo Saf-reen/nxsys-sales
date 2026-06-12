@@ -128,7 +128,7 @@ function UserProfile() {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!pwOld)           errs.old = 'Enter your current password.';
-    if (pwNew.length < 6) errs.new = 'Password must be at least 6 characters.';
+    if (pwNew.length < 8) errs.new = 'Password must be at least 8 characters.';
     if (Object.keys(errs).length) { setPwErrors(errs); return; }
     setPwSubmitting(true);
     try {

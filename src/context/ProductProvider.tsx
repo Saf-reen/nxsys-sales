@@ -1,8 +1,10 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   createProduct,
-  getProducts,
   updateProduct,
+  fetchAllPages,
+  publicApi,
+  normalizeProduct,
 } from '@/services';
 import { getApiErrorMessage } from '@/services';
 import {
@@ -58,12 +60,14 @@ export function ProductProvider({ children }) {
 
     const request = (async () => {
       try {
-        const productRes = await getProducts({}, catalogSnapshotRef.current);
-        if (!isMountedRef.current) return productRes;
-        const productList = Array.isArray(productRes) ? productRes : (productRes?.results || []);
+        const rawList = await fetchAllPages(publicApi, '/products/products/', {});
+        if (!isMountedRef.current) return rawList;
+        const productList = rawList
+          .map((p: any) => normalizeProduct(p, catalogSnapshotRef.current))
+          .filter(Boolean);
         setProducts(productList);
         lastFetchedAtRef.current = Date.now();
-        return productRes;
+        return productList;
       } catch (err) {
         if (!isMountedRef.current) return null;
         if ((err as any)?.response?.status === 429) {

@@ -100,7 +100,7 @@ function TopHeader({ profile, handleLogout }) {
             <NavLink to="/" aria-label="Home" className="group flex shrink-0 items-center">
               <img
                 // src={logo}
-                src='/nxd-t.png'
+                src='/nxd.jpeg'
                 alt="Nx Sys Distribution Logo"
                 className="h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.02] lg:h-[60px]"
                 width="240"

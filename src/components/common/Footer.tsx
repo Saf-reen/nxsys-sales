@@ -209,7 +209,7 @@ function Footer() {
                   <Link
                     key={label}
                     to={to}
-                    target= '_blank'
+                    target='_blank'
                     aria-label={label}
                     className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-slate-400 transition-all hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
                   >
@@ -233,7 +233,7 @@ function Footer() {
           </p>
           <p className="hidden text-center sm:block">
             Powered by{' '}
-            <span className="font-semibold text-primary">SRIA Infotech Pvt Ltd</span>
+            <a href="https://www.sriainfotech.com" target='_blank' className="font-semibold text-primary">SRIA Infotech Pvt Ltd</a>
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <Link to="/products" className="transition-colors hover:text-primary">Catalog</Link>

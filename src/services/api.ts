@@ -7,7 +7,8 @@ import { showToast } from '@/utils/helpers';
 // ---------------------------------------------------------------------------
 const ABSOLUTE_URL_PATTERN = /^(?:[a-z][a-z\d+.-]*:)?\/\//i;
 const AUTH_STORAGE_KEY = 'auth_session';
-const AUTH_REFRESH_KEY = 'auth_refresh';
+// Legacy key: refresh tokens now live in an httpOnly cookie; kept only to purge old sessions.
+const LEGACY_REFRESH_KEY = 'auth_refresh';
 const TEMP_EMAIL_KEY = 'nxsys_temp_email';
 const TEMP_PWD_RESET_KEY = 'nxsys_temp_pwd_reset';
 
@@ -19,21 +20,20 @@ export const normalizeBaseUrl = (value: string | undefined | null) => {
 
 export const authSessionStorage = {
   getToken: () => localStorage.getItem(AUTH_STORAGE_KEY),
-  getRefreshToken: () => localStorage.getItem(AUTH_REFRESH_KEY),
   getUser: () => {
     try {
       const user = localStorage.getItem('auth_user');
       return user ? JSON.parse(user) : null;
     } catch { return null; }
   },
-  setSession: (token: string, user: any, refresh?: string) => {
+  setSession: (token: string, user: any) => {
     localStorage.setItem(AUTH_STORAGE_KEY, token);
     localStorage.setItem('auth_user', JSON.stringify(user));
-    if (refresh) localStorage.setItem(AUTH_REFRESH_KEY, refresh);
+    localStorage.removeItem(LEGACY_REFRESH_KEY);
   },
   clearSession: () => {
     localStorage.removeItem(AUTH_STORAGE_KEY);
-    localStorage.removeItem(AUTH_REFRESH_KEY);
+    localStorage.removeItem(LEGACY_REFRESH_KEY);
     localStorage.removeItem('auth_user');
   }
 };
@@ -53,6 +53,8 @@ const getBaseUrl = () => {
 const commonConfig = {
   baseURL: getBaseUrl(),
   timeout: 60000,
+  // Refresh token is an httpOnly cookie; the browser only sends/accepts it with credentials on.
+  withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
   // Custom serializer to remove the "[]" from array parameters (e.g., categories=1&categories=2)
   paramsSerializer: (params: any) => {
@@ -88,14 +90,12 @@ const shouldSkipRefresh = (url: string) =>
 let _refreshPromise: Promise<string> | null = null;
 const getRefreshedToken = (): Promise<string> => {
   if (!_refreshPromise) {
-    const refresh = authSessionStorage.getRefreshToken();
-    if (!refresh) return Promise.reject(new Error('No refresh token'));
     _refreshPromise = axios
-      .post(`${getBaseUrl()}/accounts/token/refresh/`, { refresh })
+      .post(`${getBaseUrl()}/accounts/token/refresh/`, {}, { withCredentials: true })
       .then((res) => {
         const newToken: string = res.data.access;
         const user = authSessionStorage.getUser();
-        authSessionStorage.setSession(newToken, user, refresh);
+        authSessionStorage.setSession(newToken, user);
         return newToken;
       })
       .finally(() => { _refreshPromise = null; });
@@ -311,8 +311,7 @@ export const PRODUCT_FLAGS = [
 export const extractAuthData = (payload: any) => {
   const data = unwrapResponse(payload);
   const token = data?.access || data?.token || null;
-  const refreshToken = data?.refresh || null;
-  return { ...data, token, refreshToken, admin: data?.user || null };
+  return { ...data, token, admin: data?.user || null };
 };
 
 const extractParentId = (parent: any): any => {
@@ -542,7 +541,7 @@ export const authApi = {
   verifyResetOtp: (payload: any) => publicApi.post('/accounts/verify-reset-otp/', payload).then(unwrapResponse),
   confirmResetPassword: (payload: any) => publicApi.post('/accounts/confirm-password/', payload).then(unwrapResponse),
   resetPasswordAuthenticated: (payload: any) => api.post('/accounts/reset-password/', payload).then(unwrapResponse),
-  logout: (payload: any) => api.post('/accounts/logout/', payload).then(unwrapResponse),
+  logout: () => api.post('/accounts/logout/').then(unwrapResponse),
 };
 
 export const authService = {
@@ -550,15 +549,13 @@ export const authService = {
     const res = await authApi.login(creds);
     const data = extractAuthData(res);
     const user = { id: data.admin?.id, name: creds.username, email: data.admin?.email, role: resolveUserRole(data) };
-    if (data.token) authSessionStorage.setSession(data.token, user, data.refreshToken);
+    if (data.token) authSessionStorage.setSession(data.token, user);
     return { user, token: data.token };
   },
   register: (payload: any) => authApi.register(payload),
   logout: async (redirect?: string) => {
-    const refresh = authSessionStorage.getRefreshToken();
-    if (refresh) {
-      await authApi.logout({ refresh_token: refresh }).catch(() => { });
-    }
+    // Server clears the httpOnly refresh cookie; needs the Bearer header, no body.
+    await authApi.logout().catch(() => { });
     authSessionStorage.clearSession();
     if (typeof window !== 'undefined') {
       window.location.href = redirect || '/login';

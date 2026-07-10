@@ -318,7 +318,7 @@ function CategoryNav() {
         onMouseLeave={scheduleDesktopClose}
       >
         <div ref={navShellRef} className="container-shell flex min-h-[44px] lg:min-h-[52px] items-stretch">
-          <div className="flex min-h-[44px] lg:min-h-[52px] w-full items-stretch text-[12px] font-black uppercase tracking-wider text-textMain sm:text-[13px]">
+          <div className="flex min-h-[44px] lg:min-h-[52px] w-full items-stretch text-[12px] font-black uppercase tracking-wider text-white sm:text-[13px]">
             <button
               onClick={() => setIsSidebarOpen(true)}
               aria-label="Open Menu"

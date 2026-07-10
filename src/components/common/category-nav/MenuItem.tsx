@@ -6,8 +6,8 @@ function MenuItem({ label, active, onOpen, buttonRef }) {
       ref={buttonRef}
       type="button"
       className={`flex h-full items-center gap-1.5 px-3 md:px-6 text-[12px] md:text-[14px] font-medium uppercase tracking-[0.12em] transition-all ${active
-          ? 'bg-black/10 text-textMain'
-          : 'text-textMain hover:bg-black/10'
+          ? 'bg-black/10 text-white'
+          : 'text-white hover:bg-black/10'
         }`}
       onMouseEnter={onOpen}
       onFocus={onOpen}

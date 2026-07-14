@@ -185,13 +185,13 @@ function SEOAboutSection() {
             {/* Left — text */}
             <div>
               <p className="text-[11px] font-black uppercase tracking-[0.4em] text-primary mb-4">
-                About SRIA Distribution
+                About Sria Distribution
               </p>
               <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-950 mb-6 leading-tight">
                 India's trusted B2B electronics distribution partner
               </h2>
               <p className="text-base leading-8 text-slate-500 mb-6">
-                SRIA Distribution, operating through the NxSys B2B portal, is a Hyderabad-based authorised
+                Sria Distribution, operating through the NxSys B2B portal, is a Hyderabad-based authorised
                 distributor of enterprise electronics and IT hardware. We serve procurement teams, IT resellers,
                 system integrators, educational institutions, and corporate buyers across India who require
                 verified OEM stock at competitive bulk pricing with reliable fulfilment timelines.
@@ -244,7 +244,7 @@ function SEOAboutSection() {
               {/* Supporting text */}
               <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 space-y-4 text-[14px] leading-7 text-slate-500">
                 <p>
-                  Unlike general-purpose marketplaces, SRIA Distribution is built specifically for B2B workflows —
+                  Unlike general-purpose marketplaces, Sria Distribution is built specifically for B2B workflows —
                   supporting RFQ submissions, volume pricing negotiations, phased delivery scheduling, and
                   after-sales escalation through a single named contact.
                 </p>
@@ -420,7 +420,7 @@ function SEOAboutSection() {
               Frequently asked questions
             </h2>
             <p className="text-base leading-relaxed text-slate-500">
-              Common questions from procurement managers, IT buyers, and resellers working with SRIA Distribution
+              Common questions from procurement managers, IT buyers, and resellers working with Sria Distribution
               for the first time.
             </p>
           </div>

@@ -25,14 +25,14 @@ function PrivacyPolicy() {
           <div className="rounded-[40px] border border-greyBorder bg-white p-8 shadow-xl shadow-slate-200/50 sm:p-16 text-slate-700 space-y-8">
 
             <p className="text-lg leading-relaxed">
-              This website "NxSys - B2B Distribution Portal" is operated by SRIA Infotech Pvt Ltd. We respect and value the trust you place in us. This Privacy Policy describes how we collect, use, process, store, and disclose your information when you use our platform. By using this Platform, you agree to the collection and use of information in accordance with this Privacy Policy.
+              This website "NxSys - B2B Distribution Portal" is operated by Sria Infotech Pvt Ltd. We respect and value the trust you place in us. This Privacy Policy describes how we collect, use, process, store, and disclose your information when you use our platform. By using this Platform, you agree to the collection and use of information in accordance with this Privacy Policy.
             </p>
 
             <section className="space-y-4">
               <h2 className="text-2xl font-bold text-slate-900">I. Definitions</h2>
               <ul className="list-disc pl-6 space-y-2">
                 <li><strong>Account:</strong> A unique account created for you to access our services</li>
-                <li><strong>Company:</strong> SRIA Infotech Pvt Ltd</li>
+                <li><strong>Company:</strong> Sria Infotech Pvt Ltd</li>
                 <li><strong>Platform:</strong> NxSys website and services</li>
                 <li><strong>Personal Data:</strong> Any information that identifies an individual</li>
                 <li><strong>Usage Data:</strong> Data collected automatically from platform usage</li>
@@ -200,7 +200,7 @@ function PrivacyPolicy() {
             <section className="space-y-4">
               <h2 className="text-2xl font-bold text-slate-900">XVI. Contact Us</h2>
               <div className="space-y-2">
-                <p><strong>SRIA Infotech Pvt Ltd</strong></p>
+                <p><strong>Sria Infotech Pvt Ltd</strong></p>
                 <p>Udaya Vensar Apartments, Rd Number 1, Hanuman Nagar, Kothaguda, Hyderabad, Telangana 500084</p>
                 <p>For any queries, contact us via above details.</p>
               </div>

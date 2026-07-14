@@ -89,7 +89,7 @@ function AdminLoginPage() {
               <LayoutDashboard size={19} className="text-textMain" />
             </div>
             <div>
-              <p className="text-[14px] font-black uppercase tracking-[0.2em] text-white">SRIA Distribution</p>
+              <p className="text-[14px] font-black uppercase tracking-[0.2em] text-white">Sria Distribution</p>
               <p className="text-[11px] text-slate-500">Admin Portal</p>
             </div>
           </div>
@@ -140,7 +140,7 @@ function AdminLoginPage() {
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
               <LayoutDashboard size={17} className="text-textMain" />
             </div>
-            <p className="text-[13px] font-black uppercase tracking-wider text-slate-900">SRIA Distribution</p>
+            <p className="text-[13px] font-black uppercase tracking-wider text-slate-900">Sria Distribution</p>
           </div>
 
           {/* Accent + heading */}

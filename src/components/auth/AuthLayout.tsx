@@ -44,7 +44,7 @@ const AuthLayout = ({ children, title, subtitle, badge, imageText, imageSubtitle
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-[0_4px_16px_rgba(48,149,248,0.3)]">
             <ShoppingBag size={19} className="text-textMain" />
           </div>
-          <span className="text-[14px] font-black uppercase tracking-[0.2em] text-white">SRIA Distribution</span>
+          <span className="text-[14px] font-black uppercase tracking-[0.2em] text-white">Sria Distribution</span>
         </div>
 
         {/* Hero text */}
@@ -88,7 +88,7 @@ const AuthLayout = ({ children, title, subtitle, badge, imageText, imageSubtitle
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
               <ShoppingBag size={17} className="text-textMain" />
             </div>
-            <span className="text-[14px] font-black uppercase tracking-[0.2em] text-slate-900">SRIA Distribution</span>
+            <span className="text-[14px] font-black uppercase tracking-[0.2em] text-slate-900">Sria Distribution</span>
           </div>
 
           {/* Heading */}

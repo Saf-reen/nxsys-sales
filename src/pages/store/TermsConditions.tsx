@@ -25,7 +25,7 @@ function TermsConditions() {
           <div className="rounded-[40px] border border-greyBorder bg-white p-8 shadow-xl shadow-slate-200/50 sm:p-16 text-slate-700 space-y-8">
 
             <p className="text-lg leading-relaxed">
-              This website “NxSys - B2B Distribution Portal” is operated by SRIA Infotech Pvt Ltd. By accessing or using this Platform, You agree to comply with and be bound by these Terms & Conditions and our Privacy Policy.
+              This website “NxSys - B2B Distribution Portal” is operated by Sria Infotech Pvt Ltd. By accessing or using this Platform, You agree to comply with and be bound by these Terms & Conditions and our Privacy Policy.
             </p>
 
             <section className="space-y-4">

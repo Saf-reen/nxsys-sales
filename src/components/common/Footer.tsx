@@ -79,7 +79,7 @@ function Footer() {
               <div className="flex items-center gap-2.5">
                 <div className="h-1 w-5 rounded-full bg-primary" />
                 <p className="text-[10px] font-black uppercase tracking-[0.38em] text-primary">
-                  SRIA Distribution
+                  Sria Distribution
                 </p>
               </div>
               <h2 className="text-2xl font-black leading-snug tracking-tight text-white sm:text-3xl">
@@ -229,11 +229,11 @@ function Footer() {
       <div className="container-shell">
         <div className="flex flex-col gap-3 py-5 text-[12px] text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            &copy; {new Date().getFullYear()} SRIA Distribution. All rights reserved.
+            &copy; {new Date().getFullYear()} Sria Distribution. All rights reserved.
           </p>
           <p className="hidden text-center sm:block">
             Powered by{' '}
-            <a href="https://www.sriainfotech.com" target='_blank' className="font-semibold text-primary">SRIA Infotech Pvt Ltd</a>
+            <a href="https://www.sriainfotech.com" target='_blank' className="font-semibold text-primary">Sria Infotech Pvt Ltd</a>
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <Link to="/products" className="transition-colors hover:text-primary">Catalog</Link>

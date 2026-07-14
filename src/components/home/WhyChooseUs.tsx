@@ -39,7 +39,7 @@ function WhyChooseUs() {
         {/* Header */}
         <div className="mx-auto max-w-2xl text-center mb-14">
           <p className="text-[11px] font-black uppercase tracking-[0.4em] text-primary">
-            Why SRIA Distribution
+            Why Sria Distribution
           </p>
           <h2 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl lg:text-[2.75rem]">
             The smarter way to source enterprise hardware

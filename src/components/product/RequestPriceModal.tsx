@@ -1,17 +1,13 @@
 import { useEffect, useState, useContext } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { CheckCircle2, MessageSquare, X } from 'lucide-react';
 import Modal from '../common/Modal';
 import { rfqService } from '@/services';
 import { authService } from '@/services';
-import { rfqIntentService } from '@/services';
 import { getApiErrorMessage, getBrandName, resolveAssetUrl } from '@/services';
 import { showToast } from '../../utils/helpers';
 import { ProductContext } from '@/context/productContext';
 
 function RequestPriceModal({ isOpen, onClose, product, quantity }) {
-  const navigate = useNavigate();
-  const location = useLocation();
   // Use a null-safe context read so the modal works both inside and outside ProductProvider
   const catalogCtx = useContext(ProductContext);
   const brands = catalogCtx?.brands ?? [];
@@ -54,22 +50,6 @@ function RequestPriceModal({ isOpen, onClose, product, quantity }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!authService.isAuthenticated()) {
-      rfqIntentService.save({
-        productId: product?.id,
-        quantity: formData.quantity,
-        path: location.pathname,
-      });
-      onClose();
-      showToast({
-        title: 'Authentication Required',
-        message: 'Please sign in to request pricing.',
-        type: 'info',
-      });
-      navigate('/login', { state: { from: location, openRFQ: true } });
-      return;
-    }
 
     setIsSubmitting(true);
     try {
@@ -177,7 +157,11 @@ function RequestPriceModal({ isOpen, onClose, product, quantity }) {
           {product?.images?.[0] && (
             <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-greyBorder bg-white p-2">
               <img
-                src={(resolveAssetUrl(product.images[0])) ?? undefined}
+                src={resolveAssetUrl(
+                  typeof product.images[0] === 'string'
+                    ? product.images[0]
+                    : (product.images[0]?.image || product.images[0]?.url || product.images[0]?.image_url)
+                ) ?? undefined}
                 alt={product.name}
                 className="h-full w-full object-contain"
               />

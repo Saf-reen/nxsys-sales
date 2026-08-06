@@ -168,13 +168,7 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
   }, [id, location.pathname, location.state, navigate, product, isAuthenticated]);
 
   const handleRequestPrice = () => {
-    if (isAuthenticated) {
-      setIsModalOpen(true);
-    } else {
-      rfqIntentService.save({ productId: id, quantity, path: location.pathname });
-      showToast({ title: 'Authentication Required', message: 'Please sign in to request pricing.' });
-      navigate('/login', { state: { from: location, openRFQ: true } });
-    }
+    setIsModalOpen(true);
   };
 
   const toggleFbtItem = (id: string) => {

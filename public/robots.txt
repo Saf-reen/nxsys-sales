@@ -9,6 +9,6 @@ Disallow: /forgot-password
 Disallow: /verify-otp
 Disallow: /reset-password
 Disallow: /wishlist
-Disallow: /dashboard
+Disallow: /profile
 
 Sitemap: https://nxsysdigital.com/sitemap.xml

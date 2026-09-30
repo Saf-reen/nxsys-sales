@@ -13,6 +13,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const distDir = join(__dirname, 'dist');
 const indexFile = join(distDir, 'index.html');
 const DEFAULT_API_PROXY_TARGET = 'http://127.0.0.1:8000';
+const SITE_ORIGIN = 'https://nxsysdigital.com';
+
+const STATIC_SITEMAP_PAGES = [
+  { path: '/', changefreq: 'weekly', priority: '1.0' },
+  { path: '/products', changefreq: 'daily', priority: '0.9' },
+  { path: '/contact', changefreq: 'monthly', priority: '0.7' },
+  { path: '/terms-conditions', changefreq: 'yearly', priority: '0.3' },
+  { path: '/privacy-policy', changefreq: 'yearly', priority: '0.3' },
+];
 
 const loadDotEnv = async () => {
   const envFile = join(__dirname, '.env');
@@ -93,6 +102,102 @@ const getDefaultHeaders = () => ({
 
 const isBackendPath = (pathname) =>
   API_PROXY_ROOTS.some((root) => pathname === root.replace(/\/$/, '') || pathname.startsWith(root));
+
+const slugify = (value) =>
+  value
+    ?.toString()
+    .trim()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/&/g, '-and-')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '') || '';
+
+const escapeXml = (value) =>
+  String(value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&apos;',
+  })[char]);
+
+const fetchJson = async (url) => {
+  const response = await fetch(url, { headers: { Accept: 'application/json' } });
+  if (!response.ok) throw new Error(`Request to ${url} failed with ${response.status}`);
+  return response.json();
+};
+
+const fetchAllPages = async (firstUrl, maxPages = 25) => {
+  const results = [];
+  let nextUrl = firstUrl;
+  let pageCount = 0;
+
+  while (nextUrl && pageCount < maxPages) {
+    const payload = await fetchJson(nextUrl);
+    const pageItems = Array.isArray(payload) ? payload : payload?.results;
+    if (Array.isArray(pageItems)) results.push(...pageItems);
+    nextUrl = Array.isArray(payload) ? null : payload?.next || null;
+    pageCount += 1;
+  }
+
+  return results;
+};
+
+const buildSitemapXml = (urlEntries) => {
+  const urlTags = urlEntries
+    .map(({ path, lastmod, changefreq, priority }) => `  <url>
+    <loc>${escapeXml(`${SITE_ORIGIN}${path}`)}</loc>${lastmod ? `
+    <lastmod>${lastmod}</lastmod>` : ''}
+    <changefreq>${changefreq}</changefreq>
+    <priority>${priority}</priority>
+  </url>`)
+    .join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urlTags}\n</urlset>\n`;
+};
+
+const buildSitemap = async (upstreamOrigin) => {
+  const today = new Date().toISOString().slice(0, 10);
+  const staticEntries = STATIC_SITEMAP_PAGES.map((page) => ({ ...page, lastmod: today }));
+
+  if (!upstreamOrigin) return buildSitemapXml(staticEntries);
+
+  try {
+    const [categories, products] = await Promise.all([
+      fetchAllPages(`${upstreamOrigin}/products/categories/?page_size=200`),
+      fetchAllPages(`${upstreamOrigin}/products/products/?page_size=200`),
+    ]);
+
+    const seenCategoryPaths = new Set();
+    const categoryEntries = categories
+      .map((category) => {
+        const slug = slugify(category?.name);
+        if (!slug) return null;
+        const path = `/products/${slug}`;
+        if (seenCategoryPaths.has(path)) return null;
+        seenCategoryPaths.add(path);
+        return { path, changefreq: 'weekly', priority: '0.8', lastmod: today };
+      })
+      .filter(Boolean);
+
+    const productEntries = products
+      .map((product) => {
+        const id = product?.id ?? product?.pk;
+        if (id === undefined || id === null) return null;
+        const lastmod = (product?.updated_at || product?.updatedAt || '').toString().slice(0, 10) || today;
+        return { path: `/products/${id}`, changefreq: 'weekly', priority: '0.6', lastmod };
+      })
+      .filter(Boolean);
+
+    return buildSitemapXml([...staticEntries, ...categoryEntries, ...productEntries]);
+  } catch (error) {
+    console.error('Falling back to static sitemap entries:', error.message);
+    return buildSitemapXml(staticEntries);
+  }
+};
 
 const sendJson = (response, statusCode, payload) => {
   const body = JSON.stringify(payload);
@@ -205,6 +310,18 @@ const start = async () => {
 
     if (isBackendPath(requestUrl.pathname)) {
       proxyRequest(request, response, requestUrl, upstreamOrigin);
+      return;
+    }
+
+    if (requestUrl.pathname === '/sitemap.xml') {
+      const xml = await buildSitemap(upstreamOrigin);
+      response.writeHead(200, {
+        ...getDefaultHeaders(),
+        'Cache-Control': 'public, max-age=3600',
+        'Content-Type': 'application/xml; charset=utf-8',
+        'Content-Length': Buffer.byteLength(xml),
+      });
+      response.end(xml);
       return;
     }
 

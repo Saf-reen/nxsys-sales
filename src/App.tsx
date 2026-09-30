@@ -5,6 +5,7 @@ import { Navigate, Route, Routes, Outlet } from 'react-router-dom';
 import ScrollToTop from '@/components/common/ScrollToTop';
 import ToastNotification from '@/components/common/ToastNotification';
 import PageLoader from '@/components/common/feedback/PageLoader';
+import { useCanonicalUrl } from '@/hooks/useCanonicalUrl';
 const MainLayout = lazy(() => import('@/layouts/MainLayout'));
 const AdminLayout = lazy(() => import('@/layouts/AdminLayout'));
 
@@ -83,6 +84,8 @@ function AdminGuard() {
 // --- Main App Component ---
 
 function App() {
+  useCanonicalUrl();
+
   return (
     <>
       <ScrollToTop />

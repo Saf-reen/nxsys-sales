@@ -38,7 +38,16 @@ export const formatNumber = (value: number | string | null | undefined): string 
   new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Number(value || 0));
 
 export const slugify = (value: string | null | undefined): string =>
-  value?.toString().trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || '';
+  value
+    ?.toString()
+    .trim()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '') // strip accents (é -> e)
+    .toLowerCase()
+    .replace(/&/g, '-and-')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '') || '';
 
 export const getRatingLabel = (rating: number): string => {
   if (rating >= 4.8) return 'Excellent';

@@ -11,7 +11,7 @@ export default [
   },
   js.configs.recommended,
   {
-    files: ['eslint.config.js', 'vite.config.js'],
+    files: ['eslint.config.js', 'vite.config.js', 'server.mjs'],
     languageOptions: {
       globals: {
         ...globals.node,

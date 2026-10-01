@@ -1,6 +1,13 @@
 import Breadcrumbs from '@/components/common/Breadcrumbs';
+import { useDocumentHead } from '@/hooks/useDocumentHead';
 
 function TermsConditions() {
+  useDocumentHead({
+    title: 'Terms & Conditions | NxSys Digital B2B Portal',
+    description:
+      'Read the terms and conditions governing use of the NxSys Digital B2B procurement portal, including orders, payments, shipping, warranty and liability.',
+  });
+
   return (
     <div className="min-h-screen bg-greyLight">
       <Breadcrumbs items={[{ label: 'Terms & Conditions', active: true }]} />
@@ -176,10 +183,11 @@ function TermsConditions() {
 
             <section className="space-y-4">
               <h2 className="text-2xl font-bold text-slate-900">15. Contact / Grievance Officer</h2>
+              <h3 className="text-base font-semibold text-slate-800">Grievance Officer Details</h3>
               <div className="space-y-2">
-                <p><strong>Email:</strong> sales@nxsysdigital.com</p>
-                <p><strong>Phone:</strong> +91 97013 14138</p>
-                <p><strong>Address:</strong> 303, 3rd Floor, Udaya Vensar Apartments, Rd Number 1, Hanuman Nagar, Kothaguda, Kondapur, Hyderabad, Telangana 500084</p>
+                <div><h4 className="inline text-base font-bold">Email:</h4> sales@nxsysdigital.com</div>
+                <div><h5 className="inline text-base font-bold">Phone:</h5> +91 97013 14138</div>
+                <div><h6 className="inline text-base font-bold">Address:</h6> 303, 3rd Floor, Udaya Vensar Apartments, Rd Number 1, Hanuman Nagar, Kothaguda, Kondapur, Hyderabad, Telangana 500084</div>
               </div>
             </section>
 

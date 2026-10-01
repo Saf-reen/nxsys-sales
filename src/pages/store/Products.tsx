@@ -33,6 +33,7 @@ import {
   searchApi,
 } from '@/services';
 import { DEFAULT_FILTERS, slugify, normalizeSpecificationKey } from '@/utils';
+import { useDocumentHead } from '@/hooks/useDocumentHead';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -577,6 +578,16 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
     ...(activeSubcategoryLabel ? [{ label: activeSubcategoryLabel, active: true }] : []),
   ];
 
+  const catalogPageLabel = activeSubcategoryLabel || activeCategoryLabel || 'Global Catalog';
+  useDocumentHead({
+    title: activeCategoryLabel || activeSubcategoryLabel
+      ? `Buy ${catalogPageLabel} Online in India | NxSys Digital`
+      : 'Buy IT Hardware Online | Laptops, Monitors, Printers | NxSys Digital',
+    description: activeCategoryLabel || activeSubcategoryLabel
+      ? `Browse and buy ${catalogPageLabel} in bulk from NxSys Digital, a B2B IT hardware distributor in India with authorised OEM stock and bulk pricing.`
+      : 'Browse laptops, desktops, monitors, projectors, printers, networking equipment and accessories from NxSys Digital, a B2B IT hardware distributor in India.',
+  });
+
   // ── Progress indicator ────────────────────────────────────────────────────
 
   const loadedCount = products.length;
@@ -619,6 +630,7 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
                 </button>
               </div>
               <div className="h-full overflow-y-auto p-6 lg:p-0">
+                <h3 className="sr-only">Filters</h3>
                 <FilterSidebar
                   sections={filterSections as any}
                   filters={filters}
@@ -644,11 +656,13 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
                       : totalCount > 0 ? `${totalCount} product${totalCount !== 1 ? 's' : ''} available` : ''}
                   </p>
                   <h1 className="mt-1.5 text-2xl font-black tracking-tight text-textMain sm:mt-2 sm:text-3xl md:text-4xl">
-                    {activeSubcategoryLabel || activeCategoryLabel || 'Global Catalog'}
+                    {catalogPageLabel}
                   </h1>
+                  <h2 className="sr-only">Browse and filter the NxSys Digital catalog</h2>
                 </div>
 
                 <div className="flex flex-col gap-4 lg:shrink-0 lg:items-end">
+                  <h4 className="sr-only">Search and sort controls</h4>
                   <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
 
                     {/* Search */}
@@ -752,6 +766,8 @@ function ProductsPage({ predefinedCategory }: { predefinedCategory?: any }) {
             </div>
 
             {/* Product grid */}
+            <h5 className="sr-only">Product results</h5>
+            <h6 className="sr-only">Pagination</h6>
             <div className="min-h-[420px]">
               {loading || serverSearchLoading ? (
                 // Initial load spinner

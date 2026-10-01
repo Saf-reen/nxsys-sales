@@ -17,12 +17,16 @@ const STATS = [
 ];
 
 const ABOUT_BULLETS = [
-  'Authorised distributor sourcing — no grey market, no parallel imports',
-  'Named account manager on every partner account',
-  'Volume-tiered pricing from as low as 5 units',
-  'Pan-India delivery with phased project scheduling',
-  'Full OEM warranty with post-delivery escalation support',
-  'GST-compliant invoicing and institutional procurement support',
+  'Products sourced through authorised channels',
+  '25+ OEM brands',
+  '1,000+ active SKUs',
+  'Bulk pricing for eligible products',
+  'Pan-India delivery support',
+  'OEM warranty support',
+  'GST-compliant invoicing',
+  'Dedicated account support',
+  'RFQ and project procurement assistance',
+  'Pre-sales product guidance',
 ];
 
 const CATEGORIES = [
@@ -107,65 +111,69 @@ const STEPS = [
   {
     icon: MessageSquare,
     number: '01',
-    title: 'Browse or Request',
+    title: 'Tell Us What You Need',
     description:
-      'Search 1,000+ active SKUs with live stock indicators or submit an RFQ with your specifications, quantities, delivery location, and timeline. Registration takes five minutes.',
+      'Browse our products or send us an RFQ. Share the product, quantity, delivery location and expected timeline.',
   },
   {
     icon: FileText,
     number: '02',
-    title: 'Receive Verified Pricing',
+    title: 'Get Pricing and Availability',
     description:
-      'Your dedicated account manager reviews OEM pricelists and current stock, then returns a volume-tiered quotation — typically the same business day for standard requests.',
+      'Our team checks the requirement against current availability and pricing. You receive a quotation based on the products and quantities required.',
   },
   {
     icon: PackageCheck,
     number: '03',
-    title: 'Confirm & Fulfil',
+    title: 'Confirm the Order',
     description:
-      'Raise a purchase order against the accepted quote. In-stock orders confirmed before 2:00 PM are dispatched same-day. Phased delivery schedules agreed upfront for multi-site projects.',
+      'Once you are comfortable with the quotation, you can proceed with your purchase order. Our team then coordinates the fulfilment process.',
   },
   {
     icon: Headphones,
     number: '04',
-    title: 'Ongoing Account Support',
+    title: 'Delivery and Ongoing Support',
     description:
-      'Your account manager handles warranty activations, damage claims, future orders, and escalations — one contact for the entire lifecycle of your account.',
+      'We coordinate delivery based on the agreed requirements. For future purchases, warranty queries or product-related issues, you can continue working with your account contact.',
   },
 ];
 
 const FAQS = [
   {
-    q: 'What is the minimum order quantity for bulk pricing?',
-    a: 'Volume-based pricing activates from 5 units for most monitor, laptop, and desktop lines, with further breaks at 10, 25, 50, and 100+ units. For accessories it typically starts at 10 units. There is no site-wide minimum order value for registered partners — even single-unit purchases are fulfilled at catalog pricing.',
+    q: 'What does a B2B IT hardware distributor do?',
+    a: 'A B2B IT hardware distributor supplies technology products to businesses, institutions, resellers and other organisations. This can include laptops, desktops, monitors, printers, projectors, networking equipment and accessories.',
   },
   {
-    q: 'Are all products genuine with OEM warranty?',
-    a: 'Yes, unconditionally. Every product carries the full manufacturer warranty issued for the Indian market. We source exclusively through authorised distributor channels — no grey market, no parallel imports. Channel invoice references are available on request before your purchase.',
+    q: 'What IT hardware can I buy from NxSys Digital?',
+    a: 'You can source laptops, desktops, monitors, projectors, printers, networking equipment, accessories and other business technology products. Product availability depends on current stock.',
   },
   {
-    q: 'How long does order fulfilment and delivery take?',
-    a: 'In-stock orders confirmed before 2:00 PM on a business day are dispatched the same day. Hyderabad and Telangana: 1–2 business days. Major metros: 2–4 days. Tier-2 cities: 3–6 days. Back-order lead times are communicated explicitly in the quotation.',
+    q: 'Do you provide bulk IT hardware pricing?',
+    a: 'Yes. You can contact our team for bulk pricing. Pricing depends on the product, quantity, availability and project requirements.',
   },
   {
-    q: 'Can I get pre-sales technical support before buying?',
-    a: 'Yes, at no charge for registered partners. Our pre-sales team assists with product comparisons, compatibility verification, workstation build recommendations, and network topology reviews. Certified pre-sales engineer consultations are available for complex multi-category projects.',
+    q: 'Do you supply genuine OEM products?',
+    a: 'Yes. Products are sourced through authorised distribution channels and OEM partners. Products carry manufacturer warranty for the Indian market.',
   },
   {
-    q: 'Do you serve clients outside Hyderabad?',
-    a: 'Yes — pan-India across all 28 states and 8 union territories. For multi-city rollouts, we coordinate delivery schedules across locations under a single PO. International enquiries from the Middle East and Southeast Asia are handled case-by-case through our sales desk.',
+    q: 'What is the minimum quantity for bulk orders?',
+    a: 'For many laptop, monitor and desktop categories, volume pricing starts from five units. Accessory requirements generally start from ten units. The minimum quantity can vary depending on the product.',
   },
   {
-    q: 'What payment terms are available?',
-    a: 'New partners start on advance payment via bank transfer, UPI, or payment gateway. After a track record of successful transactions, credit terms of 15, 30, or 45 days net may be established. Government and institutional buyers are supported with PO-based billing aligned to internal approval cycles.',
+    q: 'Do you supply IT hardware across India?',
+    a: 'Yes. We support customers across India. For larger projects, multiple delivery locations can also be coordinated.',
   },
   {
-    q: 'Can you handle large-scale project deployments?',
-    a: 'Yes — from 50-unit desktop rollouts to multi-hundred-unit laptop deployments and 500-seat computer lab installations. Large projects receive a dedicated coordinator, a formal delivery plan with milestone-based dispatch, and consolidated documentation. Installation, imaging, and asset tagging services are available through our partner network.',
+    q: 'Can you help me choose the right product?',
+    a: 'Yes. Our team can help with product comparisons, compatibility, workstation requirements and other pre-sales questions.',
   },
   {
-    q: 'How do I register as a partner?',
-    a: 'Visit the register page, enter your organisation details, business email, GST number, and contact information, then submit for verification. Our onboarding team activates accounts within one business day. You get immediate catalog access, RFQ submission, and account dashboard on activation.',
+    q: 'Can NxSys Digital handle large IT hardware projects?',
+    a: 'Yes. We support larger requirements such as computer labs, workstation deployments and multi-unit laptop projects. Project requirements can be discussed with our sales team before placing an order.',
+  },
+  {
+    q: 'How can I request a quotation?',
+    a: 'You can submit an RFQ through the NxSys B2B portal or contact our sales team. Share the product, quantity, delivery location and expected timeline to help us prepare the quotation.',
   },
 ];
 
@@ -185,22 +193,21 @@ function SEOAboutSection() {
             {/* Left — text */}
             <div>
               <p className="text-[11px] font-black uppercase tracking-[0.4em] text-primary mb-4">
-                About Sria Distribution
+                About NxSys Digital
               </p>
               <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-950 mb-6 leading-tight">
-                India's trusted B2B electronics distribution partner
+                Your trusted IT hardware partner for business procurement
               </h2>
               <p className="text-base leading-8 text-slate-500 mb-6">
-                Sria Distribution, operating through the NxSys B2B portal, is a Hyderabad-based authorised
-                distributor of enterprise electronics and IT hardware. We serve procurement teams, IT resellers,
-                system integrators, educational institutions, and corporate buyers across India who require
-                verified OEM stock at competitive bulk pricing with reliable fulfilment timelines.
+                Buying IT hardware for a business is not always as simple as choosing a product online. You may
+                need to compare specifications, check availability, get bulk pricing, confirm warranty details and
+                coordinate delivery. For larger projects, managing all of this through different suppliers can take
+                even more time.
               </p>
               <p className="text-base leading-8 text-slate-500 mb-8">
-                Our catalog spans monitors, projectors, laptops, desktops, networking equipment, printers, and
-                accessories from over 25 globally recognised OEM brands. Every item is sourced through authorised
-                channels — carrying valid manufacturer warranty, traceable serial numbers, and full compliance
-                documentation for your procurement records.
+                NxSys Digital helps simplify this process. We bring different IT hardware categories together
+                through one B2B procurement channel. Our team can help with product selection, quotations, bulk
+                requirements, order coordination and after-sales support.
               </p>
 
               {/* Bullet checklist */}
@@ -236,7 +243,7 @@ function SEOAboutSection() {
                 {STATS.map((stat) => (
                   <div key={stat.label} className="flex flex-col items-center justify-center bg-white py-8 px-4 text-center">
                     <span className="text-4xl font-black tracking-tight text-slate-950">{stat.value}</span>
-                    <span className="mt-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{stat.label}</span>
+                    <h6 className="mt-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">{stat.label}</h6>
                   </div>
                 ))}
               </div>
@@ -244,7 +251,7 @@ function SEOAboutSection() {
               {/* Supporting text */}
               <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 space-y-4 text-[14px] leading-7 text-slate-500">
                 <p>
-                  Unlike general-purpose marketplaces, Sria Distribution is built specifically for B2B workflows —
+                  Unlike general-purpose marketplaces, NxSys Digital is built specifically for B2B workflows —
                   supporting RFQ submissions, volume pricing negotiations, phased delivery scheduling, and
                   after-sales escalation through a single named contact.
                 </p>
@@ -289,7 +296,7 @@ function SEOAboutSection() {
                   <Icon size={20} className="transition-colors group-hover:text-textMain" strokeWidth={2} />
                 </div>
                 <h3 className="font-black text-slate-900 mb-1 text-[15px]">{name}</h3>
-                <p className="text-[12px] font-semibold text-primary mb-3">{short}</p>
+                <h4 className="text-[12px] font-semibold text-primary mb-3">{short}</h4>
                 <p className="text-[13px] leading-relaxed text-slate-500 flex-1">{description}</p>
               </div>
             ))}
@@ -371,10 +378,10 @@ function SEOAboutSection() {
           <div className="mx-auto max-w-2xl text-center mb-16">
             <p className="text-[11px] font-black uppercase tracking-[0.4em] text-primary mb-4">How It Works</p>
             <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-5">
-              From enquiry to delivery in four steps
+              How our B2B IT hardware procurement works
             </h2>
             <p className="text-base leading-relaxed text-slate-400">
-              Our procurement process eliminates ambiguity — no hidden fees, no unclear lead times, no unverified stock.
+              We keep the process straightforward — from sharing your requirement to ongoing support after delivery.
             </p>
           </div>
 
@@ -420,7 +427,7 @@ function SEOAboutSection() {
               Frequently asked questions
             </h2>
             <p className="text-base leading-relaxed text-slate-500">
-              Common questions from procurement managers, IT buyers, and resellers working with Sria Distribution
+              Common questions from procurement managers, IT buyers, and resellers working with NxSys Digital
               for the first time.
             </p>
           </div>
@@ -436,7 +443,7 @@ function SEOAboutSection() {
 
           <div className="mt-12 rounded-2xl bg-primary/5 border border-primary/20 p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6 justify-between">
             <div>
-              <p className="font-black text-slate-950 text-lg mb-1">Still have questions?</p>
+              <h5 className="font-black text-slate-950 text-lg mb-1">Still have questions?</h5>
               <p className="text-[14px] text-slate-500">Our sales and support team is available Mon–Sat, 9:00 AM – 6:30 PM IST.</p>
             </div>
             <div className="flex flex-wrap gap-3 shrink-0">

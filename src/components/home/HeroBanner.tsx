@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 
-function HeroBanner({ slides = [] }: { slides?: any[] }) {
+function HeroBanner({ slides = [], pageHeading }: { slides?: any[]; pageHeading: string }) {
   const safeSlides: any[] = useMemo(() => (Array.isArray(slides) && slides.length ? slides : []), [slides]);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -66,9 +66,14 @@ function HeroBanner({ slides = [] }: { slides?: any[] }) {
                 </p>
               )}
 
-              <h1 className="text-[2rem] sm:text-[3.5rem] md:text-[4rem] lg:text-[4.75rem] font-bold text-white mb-3 md:mb-4 leading-[1.05] tracking-tight">
+              {/* Stable, SEO-targeted H1 — only one per page, independent of the rotating slide copy below */}
+              <h1 className="sr-only">{pageHeading}</h1>
+
+              <p
+                className="text-[2rem] sm:text-[3.5rem] md:text-[4rem] lg:text-[4.75rem] font-bold text-white mb-3 md:mb-4 leading-[1.05] tracking-tight"
+              >
                 {activeSlide.headline}
-              </h1>
+              </p>
 
               <div
                 className="text-[15px] md:text-[19px] lg:text-[21px] text-[#a1a1a6] mb-6 md:mb-8 font-medium leading-[1.4] max-w-[420px]"

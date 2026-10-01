@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom';
+import { useDocumentHead } from '@/hooks/useDocumentHead';
 
 function NotFound() {
+  useDocumentHead({
+    title: 'Page Not Found | NxSys Digital',
+    description: 'The page you are looking for does not exist or has been moved. Return to the NxSys Digital catalog.',
+  });
+
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center p-6 text-center">
       <div className="space-y-4">
@@ -10,6 +16,11 @@ function NotFound() {
           The page you&apos;re looking for doesn&apos;t exist or has been moved.
           Check the URL or return to our catalog.
         </p>
+        <h2 className="sr-only">Page not found</h2>
+        <h3 className="sr-only">Suggested action</h3>
+        <h4 className="sr-only">Return to catalog</h4>
+        <h5 className="sr-only">Continue browsing</h5>
+        <h6 className="sr-only">NxSys Digital</h6>
         <div className="pt-6">
           <Link
             to="/products"

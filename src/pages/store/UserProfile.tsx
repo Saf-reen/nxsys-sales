@@ -7,6 +7,7 @@ import {
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import { authService, profileApi, getNormalizedApiError } from '@/services';
 import { showToast } from '../../utils/helpers';
+import { useDocumentHead } from '@/hooks/useDocumentHead';
 
 type HistoryTab = 'enquiries' | 'quotes';
 
@@ -44,6 +45,11 @@ const formatDate = (v: string) => {
 };
 
 function UserProfile() {
+  useDocumentHead({
+    title: 'My Account | NxSys Digital',
+    description: 'Manage your NxSys Digital account details, password and view your enquiry and quote request history.',
+  });
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -172,6 +178,11 @@ function UserProfile() {
             <p className="mt-3 text-[13px] leading-6 text-slate-500">
               Manage your contact details, change your password, and view your request history.
             </p>
+            <h2 className="sr-only">Account profile sections</h2>
+            <h3 className="sr-only">Contact information form</h3>
+            <h4 className="sr-only">Account security</h4>
+            <h5 className="sr-only">Account summary</h5>
+            <h6 className="sr-only">Request history</h6>
           </header>
 
           {profileLoading ? (

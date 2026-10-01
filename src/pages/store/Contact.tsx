@@ -1,7 +1,14 @@
 import { Clock, Mail, MapPin, Phone, ArrowRight, MessageSquare } from 'lucide-react';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
+import { useDocumentHead } from '@/hooks/useDocumentHead';
 
 function Contact() {
+  useDocumentHead({
+    title: 'Contact Us | B2B IT Hardware Procurement Support | NxSys Digital',
+    description:
+      'Get in touch with NxSys Digital for bulk IT hardware quotes, RFQs and procurement support. Call, email or visit our Hyderabad office.',
+  });
+
   return (
     <div className="min-h-screen bg-greyLight">
       <Breadcrumbs items={[{ label: 'Contact', active: true }]} />
@@ -57,6 +64,7 @@ function Contact() {
 
       {/* Main content */}
       <div className="container-shell py-14 sm:py-20">
+        <h2 className="sr-only">Get in touch with NxSys Digital</h2>
         <div className="grid gap-6 lg:grid-cols-[1fr_380px] lg:gap-8">
 
           {/* Left — contact methods */}
@@ -67,7 +75,7 @@ function Contact() {
                 <MapPin size={22} className="text-textMain" />
               </div>
               <div className="min-w-0 space-y-1.5">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Our Office</p>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Our Office</h3>
                 <p className="text-[15px] font-semibold leading-7 text-slate-800">
                   303, 3rd Floor, Udaya Vensar Apartments, Rd Number 1, Hanuman Nagar, Kothaguda, Kondapur, Hyderabad, Telangana 500084
                 </p>
@@ -88,7 +96,7 @@ function Contact() {
                 <Phone size={22} className="text-textMain" />
               </div>
               <div className="min-w-0 space-y-1.5">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Phone</p>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Phone</h3>
                 <a
                   href="tel:+919059585039"
                   className="block text-2xl font-black text-slate-900 transition-colors hover:text-primary sm:text-3xl"
@@ -105,7 +113,7 @@ function Contact() {
                 <Mail size={22} className="text-textMain" />
               </div>
               <div className="min-w-0 space-y-1.5">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Email</p>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Email</h3>
                 <a
                   href="mailto:sales@nxsysdigital.com"
                   className="block break-all text-xl font-black text-slate-900 transition-colors hover:text-primary sm:text-2xl"
@@ -137,11 +145,11 @@ function Contact() {
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary shadow-[0_6px_18px_rgba(48,149,248,0.3)]">
                     <Clock size={20} className="text-textMain" />
                   </div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Business Hours</p>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Business Hours</h4>
                 </div>
 
                 <div>
-                  <p className="text-lg font-bold text-white">Always here for you</p>
+                  <h5 className="text-lg font-bold text-white">Always here for you</h5>
                   <p className="mt-1 text-[13px] leading-6 text-slate-400">
                     Our team is available around the clock for enterprise partners and bulk order inquiries.
                   </p>
@@ -175,7 +183,7 @@ function Contact() {
                 <MessageSquare size={18} className="text-slate-400" />
               </div>
               <div>
-                <p className="text-[12px] font-bold text-slate-700">Prefer email for bulk requests</p>
+                <h6 className="text-[12px] font-bold text-slate-700">Prefer email for bulk requests</h6>
                 <p className="mt-1 text-[12px] leading-5 text-slate-400">
                   For quotes above ₹1 lakh or custom procurement, email us with your requirements and we'll respond with a tailored proposal within 24 hours.
                 </p>

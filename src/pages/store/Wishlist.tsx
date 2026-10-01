@@ -4,9 +4,15 @@ import Breadcrumbs from '@/components/common/Breadcrumbs';
 import ProductGrid from '@/components/product/ProductGrid';
 import { useProducts } from '@/hooks/useProducts';
 import { useWishlist } from '@/hooks/useWishlist';
+import { useDocumentHead } from '@/hooks/useDocumentHead';
 import { authService } from '@/services';
 
 function Wishlist() {
+  useDocumentHead({
+    title: 'My Wishlist | NxSys Digital',
+    description: 'View and manage the IT hardware products you have saved to your NxSys Digital wishlist.',
+  });
+
   const { products = [], loading: productsLoading = false, error: productsError = '' } = useProducts() ?? {};
   const wishlist = useWishlist();
   const productIds = wishlist?.productIds || [];
@@ -28,12 +34,14 @@ function Wishlist() {
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Saved Catalog</p>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-textMain sm:text-4xl">Wishlist</h1>
+          <h2 className="sr-only">Saved products overview</h2>
           <p className="mt-3 max-w-xl text-[13px] leading-6 text-slate-500">
             {isAuthenticated
               ? 'Your saved products are synced to your account.'
               : 'Please sign in to save products to your wishlist and sync them across devices.'}
           </p>
         </div>
+        <h3 className="sr-only">Wishlist actions</h3>
         <Link
           to="/products"
           className="inline-flex min-h-[48px] items-center justify-center gap-2.5 rounded-full bg-textMain px-6 text-[11px] font-black uppercase tracking-widest text-white transition-colors hover:bg-black shrink-0"
@@ -42,6 +50,10 @@ function Wishlist() {
           <ArrowRight size={14} className="text-primary" />
         </Link>
       </div>
+
+      <h4 className="sr-only">Wishlist contents</h4>
+      <h5 className="sr-only">Wishlist status</h5>
+      <h6 className="sr-only">Saved items count</h6>
 
       {/* Error banners */}
       {wishlist?.error && (

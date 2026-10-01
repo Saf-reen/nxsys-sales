@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import placeholder from '../../assets/placeholder.jpg';
 import { getBrandName, getCategoryName } from '@/services';
 import { useProducts } from '@/hooks/useProducts';
+import { useDocumentHead } from '@/hooks/useDocumentHead';
 import HeroBanner from '@/components/home/HeroBanner';
 import TopSellersGrid from '@/components/home/TopSellersGrid';
 import CategoryCarousel, { type CarouselVariant } from '@/components/home/CategoryCarousel';
@@ -69,6 +71,12 @@ const buildProductCard = (product: any, categories: any[] = []) => {
 };
 
 function Home() {
+  useDocumentHead({
+    title: 'B2B IT Hardware Distributor in India | Bulk IT Supply | NxSys',
+    description:
+      'NxSys Digital is a B2B IT hardware distributor in India supplying laptops, desktops, monitors, printers, networking equipment and more.',
+  });
+
   const { products = [], topSellingProducts = [], categories = [], brands = [], loading = false, error = null } = useProducts() ?? {};
 
   const topSellers = useMemo(() => {
@@ -136,7 +144,40 @@ function Home() {
 
   return (
     <main className="bg-greyLight">
-      <HeroBanner slides={heroSlides} />
+      <HeroBanner slides={heroSlides} pageHeading="B2B IT Hardware Distributor in India" />
+
+      <section className="bg-white py-14 sm:py-16 border-b border-slate-100">
+        <div className="container-shell max-w-3xl mx-auto text-center">
+          <p className="text-base leading-8 text-slate-600 mb-4">
+            NxSys Digital is a B2B IT hardware distributor in India, helping businesses and institutions source
+            laptops, desktops, monitors, projectors, printers, networking equipment and other IT products.
+          </p>
+          <p className="text-base leading-8 text-slate-600 mb-4">
+            We work with businesses, IT resellers, system integrators, educational institutions and corporate
+            buyers. Through our B2B procurement model, customers can source genuine products from authorised
+            distribution channels with support for pricing, availability and delivery.
+          </p>
+          <p className="text-base leading-8 text-slate-600 mb-8">
+            Whether you need a few systems for a new office or hardware for a larger project, our team can help you
+            find the right products for your requirement.
+          </p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link
+              to="/products"
+              className="inline-flex items-center gap-2 bg-primary text-textMain font-bold px-6 py-3 rounded-full text-sm hover:bg-primary/90 transition-colors"
+            >
+              Browse Products
+            </Link>
+            <Link
+              to="/contact"
+              className="inline-flex items-center gap-2 border-2 border-slate-200 text-slate-700 font-bold px-6 py-3 rounded-full text-sm hover:border-primary hover:text-primary transition-colors"
+            >
+              Request an RFQ
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <TopSellersGrid products={topSellers} loading={loading} error={error || undefined} />
 
       {categoryCarousels.map(({ category, products: catProducts, variant }) => (

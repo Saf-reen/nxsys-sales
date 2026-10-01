@@ -1,6 +1,13 @@
 import Breadcrumbs from '@/components/common/Breadcrumbs';
+import { useDocumentHead } from '@/hooks/useDocumentHead';
 
 function PrivacyPolicy() {
+  useDocumentHead({
+    title: 'Privacy Policy | NxSys Digital B2B Portal',
+    description:
+      'Learn how NxSys Digital collects, uses, stores and protects your personal and business data on the NxSys B2B procurement portal.',
+  });
+
   return (
     <div className="min-h-screen bg-greyLight">
       <Breadcrumbs items={[{ label: 'Privacy Policy', active: true }]} />
@@ -192,15 +199,15 @@ function PrivacyPolicy() {
               <h2 className="text-2xl font-bold text-slate-900">XV. Grievance Officer</h2>
               <p>For any privacy concerns:</p>
               <div className="space-y-2">
-                <p><strong>Email:</strong> sales@nxsysdigital.com</p>
-                <p><strong>Phone:</strong> +91 97013 14138</p>
+                <div><h4 className="inline text-base font-bold">Email:</h4> sales@nxsysdigital.com</div>
+                <div><h5 className="inline text-base font-bold">Phone:</h5> +91 97013 14138</div>
               </div>
             </section>
 
             <section className="space-y-4">
               <h2 className="text-2xl font-bold text-slate-900">XVI. Contact Us</h2>
               <div className="space-y-2">
-                <p><strong>Sria Infotech Pvt Ltd</strong></p>
+                <h6 className="text-base font-bold">Sria Infotech Pvt Ltd</h6>
                 <p>303, 3rd Floor, Udaya Vensar Apartments, Rd Number 1, Hanuman Nagar, Kothaguda, Kondapur, Hyderabad, Telangana 500084</p>
                 <p>For any queries, contact us via above details.</p>
               </div>

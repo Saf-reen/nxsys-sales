@@ -36,6 +36,7 @@ const AdminReviewsPage = lazy(() => import('@/pages/admin/AdminReviewsPage'));
 
 // Store Pages
 const Home = lazy(() => import('@/pages/store/Home'));
+const AboutUs = lazy(() => import('@/pages/store/AboutUs'));
 const Products = lazy(() => import('@/pages/store/Products'));
 const ProductDetails = lazy(() => import('@/pages/store/ProductDetails'));
 const NotFound = lazy(() => import('@/pages/store/NotFound'));
@@ -117,6 +118,7 @@ function App() {
           {/* Store Routes */}
           <Route element={<StoreShell />}>
             <Route index element={<Home />} />
+            <Route path="about" element={<AboutUs />} />
             <Route path="products" element={<Products />} />
             <Route path="products/:category" element={<Products />} />
             <Route path="products/:category/:subcategory" element={<Products />} />

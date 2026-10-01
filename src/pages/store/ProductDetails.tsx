@@ -11,6 +11,7 @@ import { getBrandName, getCategoryName, catalogApi as productService, getApiErro
 import { slugify, showToast, formatCurrency } from '@/utils';
 import ProductReviews from '@/components/reviews/ProductReviews';
 import { useWishlist } from '@/hooks/useWishlist';
+import { useDocumentHead } from '@/hooks/useDocumentHead';
 
 const hasRenderableProductData = (candidate: any) =>
   Boolean(
@@ -49,6 +50,15 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
   const [similarProducts, setSimilarProducts] = useState<any[]>([]);
   const [fbtSelected, setFbtSelected] = useState<Set<string>>(new Set());
   const [fetchedSpecs, setFetchedSpecs] = useState<any[]>([]);
+
+  useDocumentHead({
+    title: product?.name
+      ? `${product.name} | Buy Online in India | NxSys Digital`
+      : 'Product Details | NxSys Digital',
+    description: product?.name
+      ? `Buy ${product.name} in bulk from NxSys Digital, a B2B IT hardware distributor in India with authorised OEM stock, warranty support and bulk pricing.`
+      : 'Browse IT hardware product details, specifications and bulk pricing from NxSys Digital.',
+  });
 
   const isAuthenticated = authService.isAuthenticated();
   const wishlist = useWishlist();
@@ -349,6 +359,11 @@ function ProductDetails({ productIdOverride = null }: { productIdOverride?: any 
               <h1 className="mt-3 text-xl font-black leading-tight tracking-tight text-textMain sm:text-[26px] md:text-2xl lg:text-3xl">
                 {product.name}
               </h1>
+              <h2 className="sr-only">Product details</h2>
+              <h3 className="sr-only">Pricing and availability</h3>
+              <h4 className="sr-only">Key specifications</h4>
+              <h5 className="sr-only">Purchase options</h5>
+              <h6 className="sr-only">Customer reviews</h6>
 
               {/* Category + rating */}
               <div className="mt-3 flex flex-wrap items-center gap-2.5">

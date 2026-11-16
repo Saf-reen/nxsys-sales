@@ -158,7 +158,7 @@ function Home() {
 
   return (
     <main className="bg-greyLight">
-      <PromoOffers />
+      {/* <PromoOffers /> */}
 
       <HeroBanner slides={heroSlides} pageHeading="B2B IT Hardware Distributor in India" />
 
